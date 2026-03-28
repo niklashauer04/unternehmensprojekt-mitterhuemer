@@ -1,6 +1,6 @@
 # Mitterhuemer Konfigurator
 
-Standbeinbasierter Next.js-Konfigurator fuer Mitterhuemer mit kundensichtiger Wizard-UI, konfigurationsbasierten Projektpfaden, lokaler Draft-Speicherung und serverseitiger Submission.
+Next.js-Konfigurator für Mitterhuemer mit kundensichtiger Projektwahl, konfigurationsbasierten Projektpfaden, lokaler Draft-Speicherung und serverseitiger Submission.
 
 ## Projektstruktur
 
@@ -20,8 +20,20 @@ npm install
 npm run dev
 ```
 
+## Qualitaet und CI
+
+Die GitHub-Actions-CI prueft denselben technischen Stand, den wir lokal absichern:
+
+```bash
+npm run lint
+npm run build
+npm run test:e2e
+```
+
+Die End-to-End-Tests laufen bewusst gegen `next build && next start` und nicht gegen einen laufenden Dev-Server. So entspricht die Testumgebung dem produktionsnahen Flow und bleibt in CI reproduzierbar.
+
 ## Wichtige Hinweise
 
 - `node_modules`, `.next` und `submissions` sind bewusst nicht Teil des Repositories.
-- Die Projektlogik ist standbeinbasiert und nicht mehr auf `Heizung` vs. `PV` reduziert.
+- Die Projektlogik ist projektbaum-basiert und nicht mehr auf `Heizung` vs. `PV` reduziert.
 - Weitere Details zur Struktur stehen in `docs/konfigurator-architektur.md`.

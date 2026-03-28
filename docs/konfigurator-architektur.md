@@ -2,55 +2,99 @@
 
 ## Zielbild
 
-Der Konfigurator ist als standbeinbasierter Projektbaum aufgebaut. Nicht mehr `Heizung` oder `PV` als grobe Sammelpfade steuern die Anwendung, sondern ein Top-Level-Standbein mit eigener Schrittfolge und eigenen Unterverzweigungen.
+Der Konfigurator ist kein klassischer Produktkonfigurator, sondern eine digitale Erstabklärung vor Rückruf, Termin oder Angebotsvorbereitung. Er ersetzt in der frühen Phase Teile der manuellen Datensammlung aus dem Vertriebsinnendienst.
 
 ## Kernprinzip
 
-- `projectStandbein` ist die Top-Level-Navigation des Konfigurators.
-- Die Anwendung startet immer mit dem Einstieg und wechselt danach in den projektspezifischen Ablauf.
-- Gemeinsame Schritte wie `Objekt`, `Ziele` und `Uebergabe` bleiben erhalten, werden aber dynamisch mit standbeinspezifischen Schritten kombiniert.
-- Unterpfade wie `Luftwaerme`, `Erdwaerme` oder `Grundwasser` werden ueber Konfiguration sichtbar, nicht ueber hart codierte UI-Sonderfaelle.
+- Die erste Entscheidung ist immer die Projektwahl.
+- Danach wird ein dynamischer Projektpfad aus konfigurierten Steps und Fragen aufgebaut.
+- Fragen sind nicht nur UI-Felder, sondern fachlich beschriebene Bausteine mit Zweck, Priorität und stabilem Ausgabeschlüssel.
+- Der Wizard trennt zwischen Pflichtfragen, hilfreicher Vertiefung und optionalen Detailfragen.
+- Vor dem finalen Senden gibt es eine Prüfstufe mit Zusammenfassung.
+- Die Ausgabe bleibt in dieser Phase lokal in `submissions/` als strukturierter Datensatz plus lesbare Zusammenfassung.
 
 ## Zentrale Bausteine
 
 - `src/features/configurator/model.ts`
-  Enthaelt die gesamte Fachkonfiguration fuer Standbeine, Steps, Felder und Branches.
-- `src/features/configurator/validation.ts`
-  Validiert immer gegen die aktuell aktiven Steps des gewaehlten Standbeins.
+  Enthält die Frage-Engine mit Projektpfaden, Steps, Prioritäten, Zwecken und Ausgabeschlüsseln.
 - `src/features/configurator/components/wizard.tsx`
-  Rendert den Wizard aus `getActiveSteps(values)` statt aus einer statischen Phasenliste.
+  Rendert den Wizard generisch aus der Konfiguration und ergänzt Beratungsführung sowie Review-Schritt.
+- `src/features/configurator/validation.ts`
+  Validiert nur aktive Fragen und behandelt Pflichtfragen separat von Vertiefungsfragen.
 - `src/features/configurator/summary.ts`
-  Baut Zusammenfassung und Lead-Datensatz aus dem aktiven Projektbaum auf.
+  Baut den lokalen Submission-Datensatz, die Completion-Metrik und die interne Zusammenfassung.
 - `src/features/configurator/lead-scoring.ts`
-  Nutzt Standbein, Kategorie und projektspezifische Signale fuer die Vorqualifizierung.
+  Bewertet Datenqualität und Projektstärke entlang von Vollständigkeit, Umsetzungsnähe, Wirtschaftlichkeit und Projektfit.
+- `src/features/configurator/storage.ts`
+  Schreibt `submission.json`, `summary.md` und optionale Dateien in `submissions/`.
 
-## Ablaufmodell
+## Frage-Engine
 
-### Gemeinsame Basis
+Jede Frage folgt einem einheitlichen Schema:
 
-- `Einstieg`
-- `Objekt`
-- `Ziele`
-- `Uebergabe`
+- `id`
+- `stepId`
+- `kind`
+- `label`
+- `required`
+- `priority`
+- `purpose`
+- `outputKey`
+- `visibleWhen`
+- optionale Hilfen wie `helperTitle`, `helperBody`, `customerHint`
 
-### Standbeine
+Damit ist die Fachlogik nicht im UI verteilt, sondern zentral beschrieben.
 
-- `Waermepumpen-Austausch`
-  Systemprofil, Bestandsanlage und konditionale Pfade fuer Luft, Erdwaerme oder Grundwasser.
-- `Direktverdampfer-Austausch`
-  Eigene Strecke fuer Austauschgruende und Standort-/Gartensituation.
-- `Umruestung Heizung`
-  Systemwunsch, Bestandsanlage und waermequellenabhaengige Unterpfade.
-- `Ausstattung eines Neubaus`
-  Bedarfe als Mehrfachauswahl und daraus abgeleitete Teilpfade fuer Waermeversorgung und PV/Energie.
-- `PV-Neuanlage`
-  Dach, Verbrauch, Verschattung sowie Speicher- und Verbraucher-Kontext.
-- `PV-Erweiterung`
-  Bestehende Anlage, Erweiterungsziele und neuer Ausbaupfad.
+## Pfadlogik
 
-## Warum diese Struktur tragfaehig ist
+Die Hauptpfade bleiben projektbasiert:
 
-- Neue Standbeine koennen ueber Konfiguration ergaenzt werden.
-- Weitere Branches koennen als Step mit `visibleWhen` eingefuehrt werden.
-- Die UI bleibt generisch und kundensichtig.
-- Draft, Validierung und Submit bleiben an derselben Stelle, nur die Ablaufquelle wurde ausgetauscht.
+- Wärmepumpen-Austausch
+- Direktverdampfer-Austausch
+- Umrüstung Heizung
+- Ausstattung eines Neubaus
+- PV-Neuanlage
+- PV-Erweiterung
+
+Jeder Pfad kombiniert:
+
+- gemeinsame Kernschritte
+- projektspezifische Fachschritte
+- konditionale Folgefragen abhängig von Antworten
+- gemeinsame Übergabe und Prüfstufe
+
+## Lokales Datenmodell
+
+Die lokale Ausgabe ist bewusst noch nicht an Odoo oder ein CRM gekoppelt. Der Datensatz ist trotzdem klar strukturiert:
+
+- `submissionMeta`
+- `customer`
+- `projectContext`
+- `qualification`
+- `commercialSignals`
+- `assessment`
+- `recommendedNextStep`
+
+So bleibt die aktuelle Phase pragmatisch, ohne späteren Neuaufbau zu erzwingen.
+
+## Bewertungslogik
+
+Die interne Einstufung arbeitet mit vier Dimensionen:
+
+- Vollständigkeit
+- Umsetzungsnähe
+- wirtschaftliches Signal
+- Projektfit
+
+Das Ergebnis ist intern:
+
+- `high`
+- `medium`
+- `low`
+
+Zusätzlich wird ein empfohlener nächster Schritt abgeleitet:
+
+- Rückruf
+- Termin
+- Angebotsvorbereitung
+- Datenergänzung

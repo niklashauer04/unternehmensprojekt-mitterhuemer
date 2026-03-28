@@ -2,6 +2,8 @@ import {
   getActiveSteps,
   getFieldConfig,
   getVisibleFieldsForStep,
+  isFieldRequired,
+  isFieldValuePresent,
   type FieldConfig,
   type FieldValue,
   type FormValues,
@@ -21,15 +23,19 @@ function isNumberValue(value: FieldValue) {
 }
 
 function getRequiredError(field: FieldConfig, value: FieldValue) {
-  if (!field.required) {
+  if (!isFieldRequired(field)) {
+    return "";
+  }
+
+  if (isFieldValuePresent(field, value)) {
     return "";
   }
 
   if (field.kind === "choice-multi") {
-    return Array.isArray(value) && value.length > 0 ? "" : "Bitte waehlen Sie mindestens eine Option aus.";
+    return "Bitte wählen Sie hier mindestens einen Punkt aus.";
   }
 
-  return String(value ?? "").trim() ? "" : "Dieses Feld wird fuer den naechsten Schritt benoetigt.";
+  return "Diese Angabe brauchen wir, damit wir sinnvoll weitermachen können.";
 }
 
 export function validateField(fieldId: string, values: FormValues, files: File[] = []) {
@@ -47,16 +53,16 @@ export function validateField(fieldId: string, values: FormValues, files: File[]
   }
 
   if (field.kind === "email" && typeof value === "string" && value.trim() && !isEmailValid(value)) {
-    return "Bitte geben Sie eine gueltige E-Mail-Adresse ein.";
+    return "Bitte geben Sie eine gültige E-Mail-Adresse an.";
   }
 
   if (field.kind === "tel" && typeof value === "string" && value.trim() && !isPhoneValid(value)) {
-    return "Bitte geben Sie eine gueltige Telefonnummer ein.";
+    return "Bitte geben Sie eine Telefonnummer an, unter der wir Sie gut erreichen.";
   }
 
   if (field.kind === "number" && typeof value === "string" && value.trim()) {
     if (!isNumberValue(value)) {
-      return "Bitte geben Sie eine gueltige Zahl ein.";
+      return "Bitte tragen Sie hier eine gültige Zahl ein.";
     }
 
     const numericValue = Number(value);
@@ -66,7 +72,7 @@ export function validateField(fieldId: string, values: FormValues, files: File[]
     }
 
     if (field.max !== undefined && numericValue > field.max) {
-      return `Bitte geben Sie hoechstens ${field.max} ein.`;
+      return `Bitte geben Sie höchstens ${field.max} ein.`;
     }
   }
 

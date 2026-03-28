@@ -13,14 +13,14 @@ export async function POST(request: Request) {
     const rawPayload = formData.get("payload");
 
     if (typeof rawPayload !== "string") {
-      return NextResponse.json({ message: "Die Anfrage enthaelt keine gueltigen Daten." }, { status: 400 });
+      return NextResponse.json({ message: "Die Anfrage enthält keine gültigen Daten." }, { status: 400 });
     }
 
     const payload = JSON.parse(rawPayload) as Payload;
     const values = payload.values;
 
     if (!values) {
-      return NextResponse.json({ message: "Die Anfrage enthaelt keine Formulardaten." }, { status: 400 });
+      return NextResponse.json({ message: "Die Anfrage enthält keine Formulardaten." }, { status: 400 });
     }
 
     const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File);
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
         {
-          message: "Bitte pruefen Sie die markierten Angaben.",
+          message: "Bitte prüfen Sie die markierten Angaben.",
           errors,
         },
         { status: 400 },

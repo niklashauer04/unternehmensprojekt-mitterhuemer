@@ -1,41 +1,53 @@
-import { calculateLeadScore, type LeadScore } from "./lead-scoring";
+import {
+  calculateLeadScore,
+  type QualificationAssessment,
+} from "./lead-scoring";
 import {
   formatFieldValue,
   getActiveSteps,
   getSelectedStandbein,
   getSelectedStandbeinCategory,
   getStandbeinConfig,
+  getVisibleFields,
   getVisibleFieldsForStep,
+  isFieldRequired,
+  isFieldValuePresent,
+  type FieldConfig,
   type FieldValue,
   type FormValues,
   type StandbeinCategory,
   type StandbeinId,
   type StepId,
+  type StepStage,
 } from "./model";
 
 export type SummaryEntry = {
   id: string;
   label: string;
+  outputKey: string;
+  priority: FieldConfig["priority"];
+  purpose: string;
   rawValue: FieldValue;
   value: string;
+  isAnswered: boolean;
 };
 
 export type SummarySection = {
   id: StepId;
   title: string;
   shortTitle: string;
+  stage: StepStage;
   entries: SummaryEntry[];
 };
 
-export type LeadRecord = {
-  meta: {
+export type SubmissionRecord = {
+  submissionMeta: {
     submittedAt: string;
     source: "online-konfigurator";
-    standbein: StandbeinId;
-    standbeinLabel: string;
+    projectKey: StandbeinId;
+    projectLabel: string;
     category: StandbeinCategory;
-    status: "neu";
-    draftPreparedForCrm: true;
+    storageVersion: "v2";
   };
   customer: {
     fullName: string;
@@ -47,33 +59,65 @@ export type LeadRecord = {
       city: string;
     };
   };
-  project: {
+  projectContext: {
+    objectType: string;
+    projectStage: string;
+    ownershipStatus: string;
+    currentSituation: string;
     goals: string[];
     budgetRange: string;
     timeline: string;
-    contactRequest: string;
-    building: {
-      buildingType: string;
-      projectStage: string;
-      heatedArea: number | null;
-      buildingYear: number | null;
-      renovationState: string;
-      ownershipStatus: string;
+    preferredContact: string;
+    selectedPath: {
+      key: StandbeinId;
+      label: string;
+      category: StandbeinCategory;
     };
-    currentSituation: string;
+    selectedSystemDirection: string;
+    newBuildNeeds: string[];
   };
   qualification: {
-    steps: SummarySection[];
-    finalNotes: string;
+    completion: {
+      requiredAnswered: number;
+      requiredTotal: number;
+      recommendedAnswered: number;
+      recommendedTotal: number;
+      percent: number;
+    };
+    sections: SummarySection[];
+    answers: Record<
+      string,
+      {
+        fieldId: string;
+        label: string;
+        priority: FieldConfig["priority"];
+        purpose: string;
+        value: string;
+        rawValue: FieldValue;
+      }
+    >;
     attachments: string[];
+    finalNotes: string;
   };
-  scoring: LeadScore;
-  crmDraft: {
-    title: string;
-    pipeline: "Privat - Vorqualifiziert";
-    nextAction: string;
-    tags: string[];
+  commercialSignals: {
+    budgetRange: string;
+    timeline: string;
+    attachmentCount: number;
+    projectSignals: string[];
   };
+  salesHandoff: {
+    headline: string;
+    summary: string;
+    contactExpectation: string;
+    keySignals: string[];
+    possibleFollowUps: string[];
+  };
+  assessment: QualificationAssessment;
+  recommendedNextStep: QualificationAssessment["recommendedNextStep"];
+};
+
+type SummaryOptions = {
+  includeUnanswered?: boolean;
 };
 
 function toNumber(value: FormValues[string]) {
@@ -89,32 +133,123 @@ function toArray(value: FormValues[string]) {
   return Array.isArray(value) ? value : [];
 }
 
-export function buildSummarySections(values: FormValues): SummarySection[] {
-  return getActiveSteps(values).map((step) => ({
-    id: step.id,
-    title: step.title,
-    shortTitle: step.shortTitle,
-    entries: getVisibleFieldsForStep(step.id, values)
-      .filter((field) => field.kind !== "file")
-      .map((field) => ({
-        id: field.id,
-        label: field.label,
-        rawValue: values[field.id],
-        value: formatFieldValue(field.id, values[field.id]),
-      })),
+function getContactExpectation(preferredContact: string, timeline: string) {
+  const urgencyText = timeline === "0-3-monate" ? "zeitnah" : "im passenden nächsten Schritt";
+
+  if (preferredContact === "termin") {
+    return `Vor-Ort-Termin ${urgencyText} abstimmen.`;
+  }
+
+  if (preferredContact === "email") {
+    return `Zuerst ${urgencyText} per E-Mail zurückmelden.`;
+  }
+
+  if (preferredContact === "beratung") {
+    return `Telefonisches Erstgespräch ${urgencyText} anbieten.`;
+  }
+
+  return `Rückmeldung ${urgencyText} in der gewünschten Form einplanen.`;
+}
+
+function buildPossibleFollowUps(values: FormValues) {
+  return getVisibleFields(values)
+    .filter((field) => field.kind !== "file")
+    .filter((field) => !isFieldValuePresent(field, values[field.id]))
+    .filter((field) => field.priority === "recommended" || field.priority === "deep-dive")
+    .slice(0, 5)
+    .map((field) => field.label);
+}
+
+function buildSummaryEntry(field: FieldConfig, values: FormValues): SummaryEntry {
+  return {
+    id: field.id,
+    label: field.label,
+    outputKey: field.outputKey,
+    priority: field.priority,
+    purpose: field.purpose,
+    rawValue: values[field.id],
+    value: formatFieldValue(field.id, values[field.id]),
+    isAnswered: isFieldValuePresent(field, values[field.id]),
+  };
+}
+
+export function buildSummarySections(values: FormValues, options: SummaryOptions = {}): SummarySection[] {
+  return getActiveSteps(values)
+    .filter((step) => step.fieldIds.length > 0)
+    .map((step) => ({
+      id: step.id,
+      title: step.title,
+      shortTitle: step.shortTitle,
+      stage: step.stage,
+      entries: getVisibleFieldsForStep(step.id, values)
+        .filter((field) => field.kind !== "file")
+        .map((field) => buildSummaryEntry(field, values))
+        .filter((entry) => options.includeUnanswered || entry.isAnswered),
+    }))
+    .filter((section) => section.entries.length > 0);
+}
+
+export function buildReviewSections(values: FormValues) {
+  return buildSummarySections(values).map((section) => ({
+    ...section,
+    entries: [...section.entries].sort((left, right) => {
+      const priorityOrder = {
+        required: 0,
+        recommended: 1,
+        "deep-dive": 2,
+      } as const;
+
+      return priorityOrder[left.priority] - priorityOrder[right.priority];
+    }),
   }));
 }
 
-export function buildLeadRecord(values: FormValues, attachments: string[]): LeadRecord {
+function buildAnswerMap(values: FormValues) {
+  return getVisibleFields(values)
+    .filter((field) => field.kind !== "file")
+    .reduce<SubmissionRecord["qualification"]["answers"]>((accumulator, field) => {
+      accumulator[field.outputKey] = {
+        fieldId: field.id,
+        label: field.label,
+        priority: field.priority,
+        purpose: field.purpose,
+        value: formatFieldValue(field.id, values[field.id]),
+        rawValue: values[field.id],
+      };
+
+      return accumulator;
+    }, {});
+}
+
+function buildCompletion(values: FormValues) {
+  const relevantFields = getVisibleFields(values).filter((field) => field.kind !== "file");
+  const requiredFields = relevantFields.filter((field) => isFieldRequired(field));
+  const recommendedFields = relevantFields.filter((field) => field.priority === "recommended");
+  const requiredAnswered = requiredFields.filter((field) => isFieldValuePresent(field, values[field.id])).length;
+  const recommendedAnswered = recommendedFields.filter((field) => isFieldValuePresent(field, values[field.id])).length;
+  const totalForPercent = requiredFields.length + recommendedFields.length;
+  const answeredForPercent = requiredAnswered + recommendedAnswered;
+
+  return {
+    requiredAnswered,
+    requiredTotal: requiredFields.length,
+    recommendedAnswered,
+    recommendedTotal: recommendedFields.length,
+    percent: totalForPercent > 0 ? Math.round((answeredForPercent / totalForPercent) * 100) : 100,
+  };
+}
+
+export function buildSubmissionRecord(values: FormValues, attachments: string[]): SubmissionRecord {
   const standbeinId = getSelectedStandbein(values);
   const standbein = getStandbeinConfig(standbeinId);
   const category = getSelectedStandbeinCategory(values);
 
   if (!standbeinId || !standbein || !category) {
-    throw new Error("Standbein fehlt.");
+    throw new Error("Projektpfad fehlt.");
   }
 
-  const scoring = calculateLeadScore({
+  const completion = buildCompletion(values);
+  const assessment = calculateLeadScore({
     standbein: standbeinId,
     category,
     ownershipStatus: String(values.ownershipStatus ?? ""),
@@ -131,17 +266,23 @@ export function buildLeadRecord(values: FormValues, attachments: string[]): Lead
     pvStorage: String(values.pvStorage ?? ""),
     pvWallbox: String(values.pvWallbox ?? ""),
     pvExpansionGoal: toArray(values.pvExpansionGoal),
+    requiredAnswered: completion.requiredAnswered,
+    requiredTotal: completion.requiredTotal,
+    recommendedAnswered: completion.recommendedAnswered,
+    recommendedTotal: completion.recommendedTotal,
   });
+  const contactExpectation = getContactExpectation(String(values.contactRequest ?? ""), String(values.timeline ?? ""));
+  const keySignals = assessment.reasons.slice(0, 4);
+  const possibleFollowUps = buildPossibleFollowUps(values);
 
   return {
-    meta: {
+    submissionMeta: {
       submittedAt: new Date().toISOString(),
       source: "online-konfigurator",
-      standbein: standbeinId,
-      standbeinLabel: standbein.label,
+      projectKey: standbeinId,
+      projectLabel: standbein.label,
       category,
-      status: "neu",
-      draftPreparedForCrm: true,
+      storageVersion: "v2",
     },
     customer: {
       fullName: String(values.fullName ?? "").trim(),
@@ -153,56 +294,64 @@ export function buildLeadRecord(values: FormValues, attachments: string[]): Lead
         city: String(values.city ?? "").trim(),
       },
     },
-    project: {
+    projectContext: {
+      objectType: String(values.buildingType ?? ""),
+      projectStage: String(values.projectStage ?? ""),
+      ownershipStatus: String(values.ownershipStatus ?? ""),
+      currentSituation: String(values.currentSituation ?? "").trim(),
       goals: toArray(values.projectGoals),
       budgetRange: String(values.budgetRange ?? ""),
       timeline: String(values.timeline ?? ""),
-      contactRequest: String(values.contactRequest ?? ""),
-      building: {
-        buildingType: String(values.buildingType ?? ""),
-        projectStage: String(values.projectStage ?? ""),
-        heatedArea: toNumber(values.heatedArea),
-        buildingYear: toNumber(values.buildingYear),
-        renovationState: String(values.renovationState ?? ""),
-        ownershipStatus: String(values.ownershipStatus ?? ""),
+      preferredContact: String(values.contactRequest ?? ""),
+      selectedPath: {
+        key: standbeinId,
+        label: standbein.label,
+        category,
       },
-      currentSituation: String(values.currentSituation ?? "").trim(),
+      selectedSystemDirection: String(values.desiredHeatingSystem ?? values.newBuildHeatingSource ?? values.dvDesiredSource ?? ""),
+      newBuildNeeds: toArray(values.newBuildNeeds),
     },
     qualification: {
-      steps: buildSummarySections(values),
-      finalNotes: String(values.finalNotes ?? "").trim(),
+      completion,
+      sections: buildSummarySections(values, { includeUnanswered: true }),
+      answers: buildAnswerMap(values),
       attachments,
+      finalNotes: String(values.finalNotes ?? "").trim(),
     },
-    scoring,
-    crmDraft: {
-      title: `${standbein.label} ${String(values.fullName ?? "").trim()}`.trim(),
-      pipeline: "Privat - Vorqualifiziert",
-      nextAction:
-        values.contactRequest === "termin"
-          ? "Vor-Ort-Termin abstimmen"
-          : values.contactRequest === "rueckruf"
-            ? "Rueckruf einplanen"
-            : "Erstberatung vorbereiten",
-      tags: [
-        `standbein:${standbeinId}`,
-        `kategorie:${category}`,
-        `score:${scoring.bucket}`,
-        `budget:${String(values.budgetRange ?? "")}`,
-        `zeitraum:${String(values.timeline ?? "")}`,
-      ],
+    commercialSignals: {
+      budgetRange: String(values.budgetRange ?? ""),
+      timeline: String(values.timeline ?? ""),
+      attachmentCount: attachments.length,
+      projectSignals: assessment.reasons,
     },
+    salesHandoff: {
+      headline: `${standbein.label}: ${assessment.recommendedNextStep.label}`,
+      summary: `${standbein.label} mit ${completion.percent} % Datenvollständigkeit. Budget ${formatFieldValue("budgetRange", values.budgetRange)}, Zeitrahmen ${formatFieldValue("timeline", values.timeline)}.`,
+      contactExpectation,
+      keySignals,
+      possibleFollowUps,
+    },
+    assessment,
+    recommendedNextStep: assessment.recommendedNextStep,
   };
 }
 
-export function createSummaryMarkdown(record: LeadRecord) {
-  return `# Mitterhuemer Projektkonfigurator
+export function createSummaryMarkdown(record: SubmissionRecord) {
+  return `# Mitterhuemer Konfigurator Zusammenfassung
 
-## Lead-Einordnung
-- Standbein: ${record.meta.standbeinLabel}
-- Kategorie: ${record.meta.category}
-- Score: ${record.scoring.score} / 100 (${record.scoring.bucket})
-- Naechste Aktion: ${record.crmDraft.nextAction}
-- Tags: ${record.crmDraft.tags.join(", ")}
+## Schnellüberblick
+- Kurzfazit: ${record.salesHandoff.headline}
+- Projekt: ${record.submissionMeta.projectLabel}
+- Ansprechpartner: ${record.customer.fullName}
+- Kontaktwunsch: ${record.projectContext.preferredContact || "noch offen"}
+- Erwartete Rückmeldung: ${record.salesHandoff.contactExpectation}
+- Empfohlener nächster Schritt: ${record.recommendedNextStep.label}
+- Begründung: ${record.recommendedNextStep.reason}
+- Datenvollständigkeit: ${record.qualification.completion.percent} %
+- Bewertung: ${record.assessment.level} (${record.assessment.score} / 100)
+
+## Kurze Einordnung
+${record.salesHandoff.summary}
 
 ## Kontakt
 - Name: ${record.customer.fullName}
@@ -210,7 +359,22 @@ export function createSummaryMarkdown(record: LeadRecord) {
 - Telefon: ${record.customer.phone}
 - Adresse: ${record.customer.address.street}, ${record.customer.address.postalCode} ${record.customer.address.city}
 
-${record.qualification.steps
+## Projektkontext
+- Objektart: ${record.projectContext.objectType || "noch offen"}
+- Projektstand: ${record.projectContext.projectStage || "noch offen"}
+- Eigentum / Rolle: ${record.projectContext.ownershipStatus || "noch offen"}
+- Budget: ${record.projectContext.budgetRange || "noch offen"}
+- Zeitrahmen: ${record.projectContext.timeline || "noch offen"}
+- Gewünschte Kontaktform: ${record.projectContext.preferredContact || "noch offen"}
+- Zielrichtung: ${record.projectContext.selectedSystemDirection || "noch offen"}
+
+## Wichtige Hinweise
+${record.salesHandoff.keySignals.length > 0 ? record.salesHandoff.keySignals.map((reason) => `- ${reason}`).join("\n") : "- Noch keine besonderen Signale"}
+
+## Mögliche Nachfragen
+${record.salesHandoff.possibleFollowUps.length > 0 ? record.salesHandoff.possibleFollowUps.map((item) => `- ${item}`).join("\n") : "- Aktuell keine offensichtlichen Nachfragen"}
+
+${record.qualification.sections
   .map(
     (section) => `## ${section.title}
 ${section.entries.map((entry) => `- ${entry.label}: ${entry.value}`).join("\n")}`,
@@ -218,9 +382,6 @@ ${section.entries.map((entry) => `- ${entry.label}: ${entry.value}`).join("\n")}
   .join("\n\n")}
 
 ## Dateien
-${record.qualification.attachments.length > 0 ? record.qualification.attachments.map((file) => `- ${file}`).join("\n") : "- keine Anhaenge"}
-
-## Scoring-Gruende
-${record.scoring.reasons.length > 0 ? record.scoring.reasons.map((reason) => `- ${reason}`).join("\n") : "- noch keine besonderen Signale"}
+${record.qualification.attachments.length > 0 ? record.qualification.attachments.map((file) => `- ${file}`).join("\n") : "- Keine Anhänge"}
 `;
 }

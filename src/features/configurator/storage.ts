@@ -1,15 +1,18 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { cwd } from "node:process";
-import { buildLeadRecord, createSummaryMarkdown } from "./summary";
+import { buildSubmissionRecord, createSummaryMarkdown } from "./summary";
+import type { QualificationLevel, RecommendedNextStepType } from "./lead-scoring";
 import type { FormValues } from "./model";
 
 export type SubmissionResult = {
   success: true;
   submissionDirectory: string;
   files: string[];
-  leadScore: number;
-  leadBucket: "hot" | "warm" | "cool";
+  assessmentLevel: QualificationLevel;
+  recommendedNextStepLabel: string;
+  recommendedNextStepReason: string;
+  recommendedNextStepType: RecommendedNextStepType;
 };
 
 function slugify(value: string) {
@@ -28,12 +31,12 @@ function timestampForPath() {
 
 export async function storeSubmission(values: FormValues, files: File[]): Promise<SubmissionResult> {
   const attachmentNames = files.map((file) => file.name);
-  const record = buildLeadRecord(values, attachmentNames);
+  const record = buildSubmissionRecord(values, attachmentNames);
   const folderName = `${timestampForPath()}-${slugify(record.customer.fullName || "anfrage")}`;
   const targetDirectory = path.join(cwd(), "submissions", folderName);
 
   await mkdir(targetDirectory, { recursive: true });
-  await writeFile(path.join(targetDirectory, "lead.json"), JSON.stringify(record, null, 2), "utf8");
+  await writeFile(path.join(targetDirectory, "submission.json"), JSON.stringify(record, null, 2), "utf8");
   await writeFile(path.join(targetDirectory, "summary.md"), createSummaryMarkdown(record), "utf8");
 
   for (const file of files) {
@@ -44,8 +47,10 @@ export async function storeSubmission(values: FormValues, files: File[]): Promis
   return {
     success: true,
     submissionDirectory: path.join("submissions", folderName),
-    files: ["lead.json", "summary.md", ...attachmentNames],
-    leadScore: record.scoring.score,
-    leadBucket: record.scoring.bucket,
+    files: ["submission.json", "summary.md", ...attachmentNames],
+    assessmentLevel: record.assessment.level,
+    recommendedNextStepLabel: record.recommendedNextStep.label,
+    recommendedNextStepReason: record.recommendedNextStep.reason,
+    recommendedNextStepType: record.recommendedNextStep.type,
   };
 }

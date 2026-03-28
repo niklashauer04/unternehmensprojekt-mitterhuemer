@@ -15,7 +15,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Mitterhuemer Konfigurator",
-  description: "Digitaler standbeinbasierter Projektkonfigurator fuer Mitterhuemer",
+  description: "Digitaler Projektkonfigurator für Energie-, Heizungs- und Photovoltaikprojekte von Mitterhuemer",
 };
 
 export default function RootLayout({
