@@ -202,8 +202,8 @@ function getRecommendedNextStep(
   if (input.requiredAnswered < input.requiredTotal) {
     return {
       type: "datenergaenzung" as const,
-      label: "Ein paar Angaben gemeinsam ergänzen",
-      reason: "Für eine verlässliche Rückmeldung fehlen noch ein paar wichtige Angaben.",
+      label: "Ein paar Angaben ergänzen",
+      reason: "Ein paar wichtige Angaben fehlen noch.",
     };
   }
 
@@ -211,7 +211,7 @@ function getRecommendedNextStep(
     return {
       type: "termin" as const,
       label: "Vor-Ort-Termin abstimmen",
-      reason: "Ihr Projekt wirkt bereits konkret, daher ist ein persönlicher Termin der sinnvollste nächste Schritt.",
+      reason: "Dein Projekt ist schon recht konkret. Ein Termin ist jetzt der nächste Schritt.",
     };
   }
 
@@ -219,7 +219,7 @@ function getRecommendedNextStep(
     return {
       type: "angebotsvorbereitung" as const,
       label: "Nächste Unterlagen vorbereiten",
-      reason: "Ihre Angaben geben bereits eine gute Grundlage für die weitere Ausarbeitung.",
+      reason: "Deine Angaben geben schon eine gute Grundlage.",
     };
   }
 
@@ -227,14 +227,14 @@ function getRecommendedNextStep(
     return {
       type: "rueckruf" as const,
       label: "Persönlich zurückrufen",
-      reason: "Ihre Angaben reichen gut für ein gezieltes persönliches Gespräch.",
+      reason: "Deine Angaben reichen gut für ein persönliches Gespräch.",
     };
   }
 
   return {
     type: "datenergaenzung" as const,
     label: "Per E-Mail nachfassen",
-    reason: "Ein paar Punkte sollten wir zuerst noch gemeinsam klären.",
+    reason: "Ein paar Punkte klären wir noch gemeinsam.",
   };
 }
 

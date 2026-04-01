@@ -12,7 +12,6 @@ import {
   formatFieldValue,
   getActiveSteps,
   getFieldsForPriority,
-  getQuestionPriorityLabel,
   getSelectedStandbein,
   getStandbeinConfig,
   getVisibleOptions,
@@ -45,21 +44,8 @@ type SubmitErrorResponse = {
 
 const EMPTY_VALUES = createInitialValues();
 const INITIAL_STEP_INDEX = 1;
-
-const PROMISES = [
-  {
-    title: "Kurz und geführt",
-    text: "Sie beantworten nur die Fragen, die für Ihr Projekt jetzt wirklich wichtig sind.",
-  },
-  {
-    title: "Weniger Rückfragen",
-    text: "Wir klären typische Punkte aus der Erstberatung bereits digital mit Ihnen vor.",
-  },
-  {
-    title: "Klarer nächster Schritt",
-    text: "Nach dem Senden ist verständlich, wie es mit Ihrem Projekt am sinnvollsten weitergeht.",
-  },
-];
+const BRAND_CLAIM = "Zum passenden Projekt.";
+const BRAND_SUBLINE = "Ein paar Fragen. Dann weißt du, wie es weitergeht.";
 
 function getTextValue(value: FormValues[string]) {
   return Array.isArray(value) ? "" : value;
@@ -67,18 +53,6 @@ function getTextValue(value: FormValues[string]) {
 
 function getMultiValue(value: FormValues[string]) {
   return Array.isArray(value) ? value : [];
-}
-
-function getPriorityClass(priority: FieldConfig["priority"]) {
-  if (priority === "required") {
-    return styles.priorityBadgeRequired;
-  }
-
-  if (priority === "recommended") {
-    return styles.priorityBadgeRecommended;
-  }
-
-  return styles.priorityBadgeDeepDive;
 }
 
 function getPreferredContactLabel(values: FormValues) {
@@ -99,18 +73,18 @@ function getContactExpectation(values: FormValues) {
   const urgencyText = timeline === "0-3-monate" ? "zeitnah" : "als Nächstes";
 
   if (contactRequest === "termin") {
-    return `Wir melden uns ${urgencyText}, um einen passenden Vor-Ort-Termin mit Ihnen abzustimmen.`;
+    return `Wir melden uns ${urgencyText} für einen Vor-Ort-Termin.`;
   }
 
   if (contactRequest === "email") {
-    return `Sie erhalten ${urgencyText} zuerst eine Rückmeldung per E-Mail.`;
+    return `Du bekommst ${urgencyText} eine E-Mail von uns.`;
   }
 
   if (contactRequest === "beratung") {
-    return `Wir melden uns ${urgencyText} für ein erstes telefonisches Gespräch.`;
+    return `Wir melden uns ${urgencyText} für ein Telefonat.`;
   }
 
-  return `Wir melden uns ${urgencyText} in der von Ihnen gewünschten Form zurück.`;
+  return `Wir melden uns ${urgencyText} in der gewünschten Form.`;
 }
 
 function getReviewTakeaway(values: FormValues, fileCount: number) {
@@ -118,12 +92,24 @@ function getReviewTakeaway(values: FormValues, fileCount: number) {
   const timeline = getTimelineLabel(values);
 
   return [
-    `Ihr Vorhaben ist klar erfasst: ${getStandbeinConfig(getSelectedStandbein(values))?.label ?? "Projektanfrage"}.`,
-    `Budget (${budget}) und geplanter Zeitpunkt (${timeline}) geben bereits eine gute Orientierung für die Rückmeldung.`,
+    `Dein Vorhaben ist erfasst: ${getStandbeinConfig(getSelectedStandbein(values))?.label ?? "Anfrage"}.`,
+    `Budget (${budget}) und Zeitpunkt (${timeline}) geben eine gute Richtung.`,
     fileCount > 0
-      ? `Zusätzliche Unterlagen liegen bereits vor und helfen uns beim nächsten Schritt.`
-      : `Offene Zusatzdetails können wir später gezielt ergänzen, falls sie für Ihr Projekt wichtig werden.`,
+      ? `Unterlagen sind schon dabei.`
+      : `Fehlende Details klären wir später.`,
   ];
+}
+
+function getStepSummary(stepId: StepId) {
+  if (stepId === "einstieg") {
+    return "Wähle das Vorhaben, das heute am besten passt.";
+  }
+
+  if (stepId === "pruefung") {
+    return "Kurz prüfen, dann senden.";
+  }
+
+  return null;
 }
 
 type ConfiguratorWizardProps = {
@@ -355,7 +341,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
 
         setSubmitState({
           status: "error",
-          message: "message" in result ? result.message : "Ihre Anfrage konnte leider nicht gesendet werden.",
+          message: "message" in result ? result.message : "Deine Anfrage konnte nicht gesendet werden.",
         });
         return;
       }
@@ -374,7 +360,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
         message:
           error instanceof Error
             ? error.message
-            : "Beim Senden ist ein unerwarteter Fehler aufgetreten.",
+            : "Beim Senden ist etwas schiefgelaufen.",
       });
     }
   }
@@ -410,11 +396,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
             </span>
             {field.description ? <span className={styles.fieldDescription}>{field.description}</span> : null}
           </div>
-          <span className={`${styles.priorityBadge} ${getPriorityClass(field.priority)}`}>
-            {getQuestionPriorityLabel(field.priority)}
-          </span>
         </div>
-        <p className={styles.fieldPurpose}>Warum diese Frage hilfreich ist: {field.purpose}</p>
         {field.customerHint ? <p className={styles.fieldHint}>{field.customerHint}</p> : null}
       </>
     );
@@ -432,7 +414,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     const helper =
       field.helperText || field.helperTitle || field.helperBody || (field.helperItems && field.helperItems.length > 0) ? (
         <details className={styles.helperBox}>
-          <summary>{field.helperCtaLabel ?? field.helperText ?? "Mehr erfahren"}</summary>
+          <summary>{field.helperCtaLabel ?? field.helperText ?? "Kurz erklärt"}</summary>
           {field.helperTitle ? <strong>{field.helperTitle}</strong> : null}
           {field.helperBody ? <p>{field.helperBody}</p> : null}
           {field.helperItems && field.helperItems.length > 0 ? (
@@ -514,7 +496,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
           {renderFieldHeader(field)}
           {helper}
           <label className={styles.uploadBox}>
-            <span>Dateien auswählen</span>
+            <span>Dateien hochladen</span>
             <small>Mehrere Dateien möglich, bis 10 MB pro Datei.</small>
             <input
               data-testid={`input-${field.id}`}
@@ -542,7 +524,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
             />
           </label>
           <ul className={styles.fileList}>
-            {files.length > 0 ? files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>) : <li>Keine Dateien ausgewählt</li>}
+            {files.length > 0 ? files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>) : <li>Keine Dateien</li>}
           </ul>
           {error ? <p className={styles.errorText} data-testid={`error-${field.id}`}>{error}</p> : null}
         </div>
@@ -588,8 +570,8 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     return (
       <section className={styles.projectSelection}>
         <div className={styles.projectSelectionHeader}>
-          <h4>Wählen Sie Ihr Vorhaben aus</h4>
-          <p>Mit einem Klick starten Sie direkt in die Fragen, die zu Ihrer Situation passen.</p>
+          <h4>Wähle dein Vorhaben</h4>
+          <p>Ein Klick, dann geht es los.</p>
         </div>
         <div className={styles.projectGrid} data-testid="project-selection-grid">
           {STANDBEINE.map((standbein) => (
@@ -602,8 +584,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
             >
               <span className={styles.projectCardKicker}>{standbein.kicker}</span>
               <strong>{standbein.label}</strong>
-              <p>{standbein.description}</p>
-              <small>{standbein.hint}</small>
+              <p>{standbein.hint}</p>
             </Link>
           ))}
         </div>
@@ -615,11 +596,8 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     return (
       <div className={styles.reviewLayout} data-testid="wizard-review">
         <section className={styles.reviewHero} data-testid="review-hero">
-          <p className={styles.reviewKicker}>Vor dem Absenden</p>
-          <h3>Ihre Anfrage auf einen Blick</h3>
-          <p>
-            Prüfen Sie die wichtigsten Angaben in Ruhe. So kommt Ihr Projekt bei Mitterhuemer direkt klar und gut nutzbar an.
-          </p>
+          <p className={styles.reviewKicker}>Überblick</p>
+          <h3>Deine Anfrage auf einen Blick</h3>
           <div className={styles.reviewMetaGrid}>
             <div>
               <span>Projekt</span>
@@ -640,19 +618,10 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
           </div>
         </section>
 
-        <section className={styles.reviewTimelineCard} data-testid="review-next-steps">
-          <h4>So geht es danach weiter</h4>
-          <ul className={styles.reviewHintList}>
-            <li>Wir haben dann bereits eine gute Erstbasis für Ihr Projekt.</li>
-            <li>{getContactExpectation(values)}</li>
-            <li>Falls etwas noch offen ist, fragen wir gezielt nach und nicht noch einmal alles neu ab.</li>
-          </ul>
-        </section>
-
         <section className={styles.reviewSummaryCard} data-testid="review-summary-card">
-          <h4>Was wir aus Ihrer Anfrage mitnehmen</h4>
+          <h4>So geht es weiter</h4>
           <ul className={styles.reviewHintList}>
-            {getReviewTakeaway(values, files.length).map((item) => (
+            {[getContactExpectation(values), ...getReviewTakeaway(values, files.length).slice(0, 2)].map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
@@ -683,51 +652,49 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   if (submitState.status === "success") {
     return (
       <main className={styles.page} data-testid="configurator-success-page">
-        <section className={styles.successShell} data-testid="wizard-success">
-          <div className={styles.brandHeader}>
-            <div className={styles.logoWrap}>
-              <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={180} height={34} priority />
+        <section className={styles.wizardFrame}>
+          <section className={styles.brandBanner}>
+            <div className={styles.brandBannerBar}>
+              <div className={styles.logoWrap}>
+                <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={180} height={34} priority />
+              </div>
             </div>
+            <div className={styles.brandBannerCopy}>
+              <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
+              <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+            </div>
+          </section>
+
+          <div className={styles.frameBody}>
+            <section className={styles.successShell} data-testid="wizard-success">
+              <p className={styles.kicker}>Danke</p>
+              <h1>Danke für deine Anfrage.</h1>
+              <p className={styles.successLead}>
+                Wir melden uns mit dem nächsten Schritt bei dir.
+              </p>
+              <p className={styles.successReason}>
+                {submitState.result.recommendedNextStepReason}
+              </p>
+              <div className={styles.successGrid}>
+                <div>
+                  <span>Projekt</span>
+                  <strong>{selectedStandbein?.label ?? "Individuelle Anfrage"}</strong>
+                </div>
+                <div>
+                  <span>Kontakt</span>
+                  <strong>{getPreferredContactLabel(values)}</strong>
+                </div>
+                <div>
+                  <span>Nächster Schritt</span>
+                  <strong>{submitState.result.recommendedNextStepLabel}</strong>
+                </div>
+              </div>
+              <p className={styles.successNote}>{getContactExpectation(values)}</p>
+              <button type="button" className={styles.primaryButton} onClick={resetWizard} data-testid="wizard-reset">
+                Neue Anfrage
+              </button>
+            </section>
           </div>
-          <p className={styles.kicker}>Vielen Dank</p>
-          <div className={styles.headlineBlock}>
-            <h1>Vielen Dank für Ihre Anfrage.</h1>
-            <div className={styles.headlineAccent} aria-hidden="true">
-              <span className={styles.headlineAccentGreen} />
-              <span className={styles.headlineAccentPink} />
-            </div>
-          </div>
-          <p className={styles.successLead}>
-            Wir haben Ihre Angaben erhalten und melden uns mit dem passenden nächsten Schritt bei Ihnen.
-          </p>
-          <p className={styles.successReason}>
-            {submitState.result.recommendedNextStepReason}
-          </p>
-          <div className={styles.successGrid}>
-            <div>
-              <span>Projekt</span>
-              <strong>{selectedStandbein?.label ?? "Individuelle Anfrage"}</strong>
-            </div>
-            <div>
-              <span>Kontakt</span>
-              <strong>{getPreferredContactLabel(values)}</strong>
-            </div>
-            <div>
-              <span>Nächster Schritt</span>
-              <strong>{submitState.result.recommendedNextStepLabel}</strong>
-            </div>
-          </div>
-          <div className={styles.successChecklist}>
-            <p>Was Sie jetzt erwarten können</p>
-            <ul>
-              <li>Sie müssen im Moment nichts weiter vorbereiten.</li>
-              <li>{getContactExpectation(values)}</li>
-              <li>Falls noch etwas fehlt, fragen wir gezielt nach.</li>
-            </ul>
-          </div>
-          <button type="button" className={styles.primaryButton} onClick={resetWizard} data-testid="wizard-reset">
-            Neue Anfrage beginnen
-          </button>
         </section>
       </main>
     );
@@ -739,198 +706,116 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
 
   return (
     <main className={styles.page} data-testid="configurator-wizard" data-step-id={currentStep.id}>
-      <section className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <div className={styles.brandHeader}>
+      <section className={styles.wizardFrame}>
+        <section className={styles.brandBanner}>
+          <div className={styles.brandBannerBar}>
             <div className={styles.logoWrap}>
               <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={180} height={34} priority />
             </div>
           </div>
-          <p className={styles.kicker}>Einfach starten. Klar geführt. Persönlich begleitet.</p>
-          <div className={styles.headlineBlock}>
-            <h1>Ihr Projekt in wenigen Minuten gut einschätzen.</h1>
-            <div className={styles.headlineAccent} aria-hidden="true">
-              <span className={styles.headlineAccentGreen} />
-              <span className={styles.headlineAccentPink} />
-            </div>
+          <div className={styles.brandBannerCopy}>
+            <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
+            <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
           </div>
-          <p>
-            Statt eines langen Formulars führen wir Sie Schritt für Schritt durch die wichtigsten Fragen. So wissen wir früh genug,
-            wie wir Sie zu Ihrem Vorhaben sinnvoll unterstützen können.
-          </p>
-        </div>
-        <div className={styles.heroFacts}>
-          {PROMISES.map((promise) => (
-            <div key={promise.title}>
-              <span>{promise.title}</span>
-              <strong>{promise.text}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
+        </section>
 
-      <section className={styles.workspace}>
-        <div className={styles.wizardColumn}>
-          <div className={styles.progressPanel} data-testid="wizard-progress">
-            <div className={styles.progressHeading} data-testid="wizard-step-meta">
-              <div>
-                <p className={styles.phaseCounter} data-testid="wizard-step-counter">
-                  Schritt {currentStepIndex + 1} von {activeSteps.length}
-                </p>
+        <div className={styles.frameBody}>
+          <section className={styles.workspace}>
+            <div className={styles.stepShell}>
+              <div className={styles.stepHeader} data-testid="wizard-progress">
+                <div className={styles.stepHeaderTop}>
+                  <p className={styles.phaseCounter} data-testid="wizard-step-counter">
+                    Schritt {currentStepIndex + 1} von {activeSteps.length}
+                  </p>
+                  {selectedStandbein && !isProjectSelectionStep ? (
+                    <span className={styles.projectBadge} data-testid="wizard-project-badge">{selectedStandbein.label}</span>
+                  ) : null}
+                </div>
                 <h2 data-testid="wizard-step-title">{currentStep.title}</h2>
-                <p>{currentStep.intro ?? currentStep.description}</p>
-                {currentStep.whyItMatters ? (
-                  <div className={styles.stepMetaBlock}>
-                    <span>Warum das wichtig ist</span>
-                    <p>{currentStep.whyItMatters}</p>
-                  </div>
-                ) : null}
-                {currentStep.nextStepHint ? (
-                  <div className={styles.stepMetaBlock}>
-                    <span>Was danach kommt</span>
-                    <p>{currentStep.nextStepHint}</p>
-                  </div>
-                ) : null}
-              </div>
-              {selectedStandbein && !isProjectSelectionStep ? (
-                <div className={styles.projectBadgeWrap} data-testid="wizard-project-badge-wrap">
-                  <span className={styles.projectBadge} data-testid="wizard-project-badge">{selectedStandbein.label}</span>
-                  <small>{selectedStandbein.kicker}</small>
-                </div>
-              ) : null}
-            </div>
-
-            <div className={styles.progressBar} aria-hidden="true">
-              <div className={styles.progressValue} style={{ width: `${progress}%` }} />
-            </div>
-
-            <div className={styles.phaseList} aria-hidden="true">
-              {activeSteps.map((step, index) => (
-                <span
-                  key={step.id}
-                  className={
-                    index === currentStepIndex
-                      ? styles.phasePillActive
-                      : index < currentStepIndex
-                        ? styles.phasePillDone
-                        : styles.phasePill
-                  }
-                >
-                  {step.shortTitle}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.formCard} data-testid={`wizard-step-${currentStep.id}`}>
-            <div className={styles.formIntro} data-testid="wizard-form-intro">
-              <div className={styles.sectionTitleWrap}>
-                <h3>{currentStep.title}</h3>
-                <div className={styles.sectionAccent} aria-hidden="true">
-                  <span className={styles.sectionAccentGreen} />
-                  <span className={styles.sectionAccentPink} />
+                <p className={styles.stepSummary}>{getStepSummary(currentStep.id) ?? currentStep.description}</p>
+                <div className={styles.progressBar} aria-hidden="true">
+                  <div className={styles.progressValue} style={{ width: `${progress}%` }} />
                 </div>
               </div>
-              <p>{currentStep.description}</p>
-              {currentStep.goal ? <p className={styles.stepGoal}>{currentStep.goal}</p> : null}
-            </div>
 
-            {isReviewStep ? (
-              renderReview()
-            ) : isProjectSelectionStep ? (
-              renderProjectSelection()
-            ) : (
-              <div className={styles.questionGroupStack}>
-                {renderQuestionGroup(
-                  "Das brauchen wir jetzt",
-                  "Diese Angaben reichen, damit wir Ihr Projekt sinnvoll einordnen und gut weiterführen können.",
-                  requiredFields,
+              <div className={styles.formCard} data-testid={`wizard-step-${currentStep.id}`}>
+                {isReviewStep ? (
+                  renderReview()
+                ) : isProjectSelectionStep ? (
+                  renderProjectSelection()
+                ) : (
+                  <div className={styles.questionGroupStack}>
+                    {[requiredFields, recommendedFields, deepDiveFields].filter((fields) => fields.length > 0).length > 1 ? (
+                      <>
+                        {renderQuestionGroup(
+                          "Wichtig",
+                          "Diese Angaben fehlen noch.",
+                          requiredFields,
+                        )}
+                        {renderQuestionGroup(
+                          "Optional",
+                          "Hilft uns bei der Einordnung.",
+                          recommendedFields,
+                        )}
+                        {renderQuestionGroup(
+                          "Falls du es weißt",
+                          "Nur ergänzen, wenn du es gerade weißt.",
+                          deepDiveFields,
+                        )}
+                      </>
+                    ) : (
+                      <div className={styles.fieldStack}>{currentFields.map((field) => renderField(field))}</div>
+                    )}
+                    {currentFields.length === 0 ? (
+                      <p className={styles.emptyState}>
+                        {currentStep.emptyStateText ?? "Hier fehlt nichts mehr."}
+                      </p>
+                    ) : null}
+                  </div>
                 )}
-                {renderQuestionGroup(
-                  "Hilft für eine genauere Einschätzung",
-                  "Diese Angaben machen die Rückmeldung genauer, sind aber bewusst einfacher und knapper gehalten.",
-                  recommendedFields,
-                )}
-                {renderQuestionGroup(
-                  "Falls Sie es gerade wissen",
-                  "Diese Details sind hilfreich, aber nicht nötig, damit Sie jetzt gut weiterkommen.",
-                  deepDiveFields,
-                )}
-                {currentFields.length === 0 ? (
-                  <p className={styles.emptyState}>
-                    {currentStep.emptyStateText ?? "Für diesen Schritt brauchen wir aktuell keine zusätzlichen Angaben."}
+
+                {submitState.status === "error" ? (
+                  <p className={styles.errorBanner} data-testid="wizard-error-banner">
+                    {submitState.message}
                   </p>
                 ) : null}
+
+                <div className={styles.actions} data-testid="wizard-actions">
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={goToPreviousStep}
+                    disabled={currentStepIndex === 0 || submitState.status === "submitting"}
+                    data-testid="wizard-button-back"
+                  >
+                    Zurück
+                  </button>
+
+                  {isReviewStep ? (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={submitLead}
+                      disabled={submitState.status === "submitting"}
+                      data-testid="wizard-button-submit"
+                    >
+                      {submitState.status === "submitting" ? "Wird gesendet …" : "Anfrage senden"}
+                    </button>
+                  ) : isProjectSelectionStep ? null : (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={goToNextStep}
+                      disabled={submitState.status === "submitting"}
+                      data-testid="wizard-button-next"
+                    >
+                      Weiter
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-
-            {submitState.status === "error" ? (
-              <p className={styles.errorBanner} data-testid="wizard-error-banner">
-                {submitState.message}
-              </p>
-            ) : null}
-
-            <div className={styles.actions} data-testid="wizard-actions">
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={goToPreviousStep}
-                disabled={currentStepIndex === 0 || submitState.status === "submitting"}
-                data-testid="wizard-button-back"
-              >
-                Einen Schritt zurück
-              </button>
-
-              {isReviewStep ? (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={submitLead}
-                  disabled={submitState.status === "submitting"}
-                  data-testid="wizard-button-submit"
-                >
-                  {submitState.status === "submitting" ? "Anfrage wird gesendet …" : "Anfrage jetzt senden"}
-                </button>
-              ) : isProjectSelectionStep ? null : (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={goToNextStep}
-                  disabled={submitState.status === "submitting"}
-                  data-testid="wizard-button-next"
-                >
-                  Weiter zur nächsten Frage
-                </button>
-              )}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.trustSection}>
-        <div className={styles.trustCard}>
-          <div className={styles.sectionTitleWrap}>
-            <h3>Gut zu wissen</h3>
-            <div className={styles.sectionAccent} aria-hidden="true">
-              <span className={styles.sectionAccentGreen} />
-              <span className={styles.sectionAccentPink} />
-            </div>
-          </div>
-          <p>
-            Sie müssen nicht jede Frage exakt beantworten. Für den Einstieg reicht meistens eine ehrliche und grobe Einschätzung völlig aus.
-          </p>
-        </div>
-        <div className={styles.trustCard}>
-          <div className={styles.sectionTitleWrap}>
-            <h3>Wofür Ihre Angaben genutzt werden</h3>
-            <div className={styles.sectionAccent} aria-hidden="true">
-              <span className={styles.sectionAccentGreen} />
-              <span className={styles.sectionAccentPink} />
-            </div>
-          </div>
-          <p>
-            Mit wenigen gezielten Angaben entsteht bereits eine deutlich bessere Grundlage für Rückruf, Termin oder die weitere Einschätzung Ihres Projekts.
-          </p>
+          </section>
         </div>
       </section>
     </main>

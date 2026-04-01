@@ -20,6 +20,26 @@ npm install
 npm run dev
 ```
 
+Der lokale Entwicklungsserver wird bewusst auf `127.0.0.1:3000` gestartet.
+Verwenden Sie fuer lokale Tests auf diesem Mac immer:
+
+```text
+http://127.0.0.1:3000
+```
+
+Wenn `npm run dev` nicht startet, ist Port `3000` meist noch durch einen alten Prozess belegt.
+Pruefen Sie das mit:
+
+```bash
+lsof -iTCP:3000 -sTCP:LISTEN -n -P
+```
+
+Einen haengenden lokalen Next-Dev-Prozess koennen Sie bei Bedarf so beenden:
+
+```bash
+pkill -f "next dev"
+```
+
 ## Qualitaet und CI
 
 Die GitHub-Actions-CI prueft denselben technischen Stand, den wir lokal absichern:

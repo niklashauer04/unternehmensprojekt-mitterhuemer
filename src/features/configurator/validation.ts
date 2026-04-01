@@ -32,10 +32,10 @@ function getRequiredError(field: FieldConfig, value: FieldValue) {
   }
 
   if (field.kind === "choice-multi") {
-    return "Bitte wählen Sie hier mindestens einen Punkt aus.";
+    return "Bitte wähle mindestens einen Punkt.";
   }
 
-  return "Diese Angabe brauchen wir, damit wir sinnvoll weitermachen können.";
+  return "Diese Angabe fehlt noch.";
 }
 
 export function validateField(fieldId: string, values: FormValues, files: File[] = []) {
@@ -53,31 +53,31 @@ export function validateField(fieldId: string, values: FormValues, files: File[]
   }
 
   if (field.kind === "email" && typeof value === "string" && value.trim() && !isEmailValid(value)) {
-    return "Bitte geben Sie eine gültige E-Mail-Adresse an.";
+    return "Bitte gib eine gültige E-Mail-Adresse an.";
   }
 
   if (field.kind === "tel" && typeof value === "string" && value.trim() && !isPhoneValid(value)) {
-    return "Bitte geben Sie eine Telefonnummer an, unter der wir Sie gut erreichen.";
+    return "Bitte gib eine Telefonnummer an.";
   }
 
   if (field.kind === "number" && typeof value === "string" && value.trim()) {
     if (!isNumberValue(value)) {
-      return "Bitte tragen Sie hier eine gültige Zahl ein.";
+      return "Bitte gib eine gültige Zahl ein.";
     }
 
     const numericValue = Number(value);
 
     if (field.min !== undefined && numericValue < field.min) {
-      return `Bitte geben Sie mindestens ${field.min} ein.`;
+      return `Bitte gib mindestens ${field.min} ein.`;
     }
 
     if (field.max !== undefined && numericValue > field.max) {
-      return `Bitte geben Sie höchstens ${field.max} ein.`;
+      return `Bitte gib höchstens ${field.max} ein.`;
     }
   }
 
   if (field.kind === "file" && files.some((file) => file.size > 10 * 1024 * 1024)) {
-    return "Bitte laden Sie nur Dateien bis 10 MB hoch.";
+    return "Bitte lade nur Dateien bis 10 MB hoch.";
   }
 
   return "";
