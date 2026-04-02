@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 import styles from "./wizard.module.css";
 import {
@@ -11,6 +10,7 @@ import {
   createInitialValues,
   formatFieldValue,
   getActiveSteps,
+  getFieldConfig,
   getFieldsForPriority,
   getSelectedStandbein,
   getStandbeinConfig,
@@ -112,6 +112,33 @@ function getStepSummary(stepId: StepId) {
   return null;
 }
 
+const UNSURE_GROUPS = [
+  {
+    title: "Pellets / Biomasse",
+    description: "Kurz zu Lager und Systemart.",
+    fieldIds: ["unsureBiomassStorageSpace", "unsureBiomassSystemType"],
+  },
+  {
+    title: "Luftwärme",
+    description: "Kurz zu Platz und Zugang.",
+    fieldIds: ["unsureAirPlacement", "unsureAirAccess"],
+  },
+  {
+    title: "Erdwärme",
+    description: "Kurz zu Bohrung, Zufahrt und Platz.",
+    fieldIds: ["unsureGeoDrillingAllowed", "unsureGeoDrillingAccess", "unsureGeoDrillingSpace"],
+  },
+  {
+    title: "Grundwasser",
+    description: "Kurz zu Verfügbarkeit, Tiefe und Genehmigung.",
+    fieldIds: ["unsureWaterKnownAvailable", "unsureWaterDepth", "unsureWaterPermitPossible"],
+  },
+] as const;
+
+function isStandbeinId(value: string | null): value is StandbeinId {
+  return STANDBEINE.some((standbein) => standbein.id === value);
+}
+
 type ConfiguratorWizardProps = {
   initialProjectStandbein?: StandbeinId | null;
 };
@@ -141,12 +168,16 @@ function scrollToFirstErrorField(nextErrors: Record<string, string>) {
 
 export function ConfiguratorWizard({ initialProjectStandbein = null }: ConfiguratorWizardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectFromUrl = searchParams.get("projekt");
+  const currentProjectStandbein = isStandbeinId(projectFromUrl) ? projectFromUrl : initialProjectStandbein;
   const [values, setValues] = useState<FormValues>(() => createInitialWizardValues(initialProjectStandbein));
   const [currentStepIndex, setCurrentStepIndex] = useState(initialProjectStandbein ? INITIAL_STEP_INDEX : 0);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [draftReady, setDraftReady] = useState(false);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const [openInlineInfoFieldId, setOpenInlineInfoFieldId] = useState<string | null>(null);
 
   const activeSteps = getActiveSteps(values);
   const currentStep = activeSteps[currentStepIndex] ?? activeSteps[0];
@@ -159,9 +190,16 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   const reviewSections = buildReviewSections(values);
   const isProjectSelectionStep = currentStep?.id === "einstieg";
   const isReviewStep = currentStep?.id === "pruefung";
-  const hasProjectUrlState = Boolean(initialProjectStandbein);
+  const hasProjectUrlState = Boolean(currentProjectStandbein);
 
   useEffect(() => {
+    if (!currentProjectStandbein) {
+      setValues(createInitialWizardValues(null));
+      setCurrentStepIndex(0);
+      setDraftReady(true);
+      return;
+    }
+
     try {
       const rawDraft = window.localStorage.getItem(DRAFT_STORAGE_KEY);
 
@@ -172,30 +210,34 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
 
       const draft = JSON.parse(rawDraft) as DraftState;
       const draftStandbein = getSelectedStandbein(draft.values ?? EMPTY_VALUES);
-      const shouldUseDraft = !initialProjectStandbein || draftStandbein === initialProjectStandbein;
+      const shouldUseDraft = draftStandbein === currentProjectStandbein;
 
       if (!shouldUseDraft) {
+        const nextValues = createInitialWizardValues(currentProjectStandbein);
+        setValues(nextValues);
+        setCurrentStepIndex(INITIAL_STEP_INDEX);
+        setDraftReady(true);
         return;
       }
 
       const restoredValues = {
-        ...createInitialWizardValues(initialProjectStandbein),
+        ...createInitialWizardValues(currentProjectStandbein),
         ...draft.values,
-        ...(initialProjectStandbein ? { projectStandbein: initialProjectStandbein } : null),
+        ...(currentProjectStandbein ? { projectStandbein: currentProjectStandbein } : null),
       };
       const restoredSteps = getActiveSteps(restoredValues);
       const restoredIndex = draft.currentStepId ? restoredSteps.findIndex((step) => step.id === draft.currentStepId) : 0;
 
       setValues(restoredValues);
       setCurrentStepIndex(
-        restoredIndex >= 0 ? restoredIndex : initialProjectStandbein ? INITIAL_STEP_INDEX : 0,
+        restoredIndex >= 0 ? restoredIndex : currentProjectStandbein ? INITIAL_STEP_INDEX : 0,
       );
     } catch {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     } finally {
       setDraftReady(true);
     }
-  }, [initialProjectStandbein]);
+  }, [currentProjectStandbein]);
 
   useEffect(() => {
     setCurrentStepIndex((index) => Math.min(index, Math.max(activeSteps.length - 1, 0)));
@@ -230,6 +272,10 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStepIndex, submitState.status]);
+
+  useEffect(() => {
+    setOpenInlineInfoFieldId(null);
+  }, [currentStep?.id]);
 
   function updateValue(fieldId: string, nextValue: FormValues[string]) {
     setValues((currentValues) => ({
@@ -285,7 +331,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       setFiles([]);
       setErrors({});
       setCurrentStepIndex(0);
-      router.replace("/");
+      router.push("/");
       return;
     }
 
@@ -374,7 +420,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       setErrors({});
       setCurrentStepIndex(0);
       setSubmitState({ status: "idle" });
-      router.replace("/");
+      router.push("/");
       return;
     }
 
@@ -386,6 +432,9 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   }
 
   function renderFieldHeader(field: FieldConfig) {
+    const tooltipId = `field-inline-info-${field.id}`;
+    const isInlineInfoOpen = openInlineInfoFieldId === field.id;
+
     return (
       <>
         <div className={styles.fieldHeader}>
@@ -396,6 +445,37 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
             </span>
             {field.description ? <span className={styles.fieldDescription}>{field.description}</span> : null}
           </div>
+          {field.inlineInfo ? (
+            <div
+              className={`${styles.inlineInfoWrap} ${isInlineInfoOpen ? styles.inlineInfoWrapOpen : ""}`}
+              onMouseLeave={() => setOpenInlineInfoFieldId((currentValue) => (currentValue === field.id ? null : currentValue))}
+            >
+              <button
+                type="button"
+                className={styles.inlineInfoButton}
+                aria-label={`${field.label} erklären`}
+                aria-describedby={tooltipId}
+                aria-expanded={isInlineInfoOpen}
+                data-testid={`field-inline-info-button-${field.id}`}
+                onClick={() =>
+                  setOpenInlineInfoFieldId((currentValue) => (currentValue === field.id ? null : field.id))
+                }
+                onFocus={() => setOpenInlineInfoFieldId(field.id)}
+                onBlur={() => setOpenInlineInfoFieldId((currentValue) => (currentValue === field.id ? null : currentValue))}
+              >
+                i
+              </button>
+              <div
+                id={tooltipId}
+                role="tooltip"
+                className={styles.inlineInfoTooltip}
+                data-testid={`field-inline-info-tooltip-${field.id}`}
+              >
+                <strong>{field.inlineInfo.title}</strong>
+                <p>{field.inlineInfo.body}</p>
+              </div>
+            </div>
+          ) : null}
         </div>
         {field.customerHint ? <p className={styles.fieldHint}>{field.customerHint}</p> : null}
       </>
@@ -410,6 +490,10 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       "data-field-kind": field.kind,
       "data-field-priority": field.priority,
     };
+
+    if (field.id === "groundwaterDepthValue") {
+      return null;
+    }
 
     const helper =
       field.helperText || field.helperTitle || field.helperBody || (field.helperItems && field.helperItems.length > 0) ? (
@@ -430,12 +514,17 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     if (field.kind === "choice-single" || field.kind === "choice-multi") {
       const visibleOptions = getVisibleOptions(field, values);
       const selectedValues = field.kind === "choice-single" ? [String(values[field.id] ?? "")] : getMultiValue(values[field.id]);
+      const shouldRenderInlineGroundwaterInput = field.id === "groundwaterDepthKnownOrEstimate";
+      const groundwaterInlineField = shouldRenderInlineGroundwaterInput ? getFieldConfig("groundwaterDepthValue") : null;
+      const groundwaterInlineError = groundwaterInlineField ? errors[groundwaterInlineField.id] : "";
+      const showGroundwaterInlineField =
+        shouldRenderInlineGroundwaterInput && groundwaterInlineField && values.groundwaterDepthKnownOrEstimate === "eingabe";
 
       return (
         <div key={field.id} className={styles.choiceField} role="group" aria-label={field.label} {...fieldTestProps}>
           {renderFieldHeader(field)}
           {helper}
-          <div className={styles.choiceGrid}>
+          <div className={shouldRenderInlineGroundwaterInput ? styles.choiceGridInline : styles.choiceGrid}>
             {visibleOptions.map((option) => {
               const active = selectedValues.includes(option.value);
               const inputId = `${field.id}-${option.value}`;
@@ -466,8 +555,33 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
                 </label>
               );
             })}
+            {showGroundwaterInlineField ? (
+              <label
+                className={styles.inlineChoiceInputWrap}
+                data-field-id={groundwaterInlineField.id}
+                data-field-priority={groundwaterInlineField.priority ?? "recommended"}
+                data-testid={`field-${groundwaterInlineField.id}`}
+              >
+                <span className={styles.inlineChoiceInputLabel}>Tiefe</span>
+                <div className={styles.inlineChoiceInputShell}>
+                  <input
+                    data-testid={`input-${groundwaterInlineField.id}`}
+                    className={groundwaterInlineError ? styles.inputError : styles.inlineChoiceInput}
+                    type="number"
+                    min={groundwaterInlineField.min}
+                    max={groundwaterInlineField.max}
+                    value={getTextValue(values[groundwaterInlineField.id])}
+                    onChange={(event) => updateValue(groundwaterInlineField.id, event.target.value)}
+                  />
+                  <small>{groundwaterInlineField.unit}</small>
+                </div>
+              </label>
+            ) : null}
           </div>
           {error ? <p className={styles.errorText} data-testid={`error-${field.id}`}>{error}</p> : null}
+          {groundwaterInlineError ? (
+            <p className={styles.errorText} data-testid={`error-${groundwaterInlineField?.id}`}>{groundwaterInlineError}</p>
+          ) : null}
         </div>
       );
     }
@@ -555,14 +669,30 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       return null;
     }
 
+    const groupKey = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
     return (
-      <section className={styles.questionGroup} data-testid={`question-group-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+      <section key={groupKey} className={styles.questionGroup} data-testid={`question-group-${groupKey}`}>
         <div className={styles.questionGroupHeader}>
           <h4>{title}</h4>
           <p>{description}</p>
         </div>
         <div className={styles.fieldStack}>{fields.map((field) => renderField(field))}</div>
       </section>
+    );
+  }
+
+  function renderUnsureCheckGroups(fields: FieldConfig[]) {
+    const fieldMap = new Map(fields.map((field) => [field.id, field]));
+
+    return UNSURE_GROUPS.map((group) =>
+      renderQuestionGroup(
+        group.title,
+        group.description,
+        group.fieldIds
+          .map((fieldId) => fieldMap.get(fieldId))
+          .filter((field): field is FieldConfig => Boolean(field)),
+      ),
     );
   }
 
@@ -575,17 +705,29 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
         </div>
         <div className={styles.projectGrid} data-testid="project-selection-grid">
           {STANDBEINE.map((standbein) => (
-            <Link
+            <button
               key={standbein.id}
+              type="button"
               className={styles.projectCard}
-              href={`/?projekt=${standbein.id}`}
-              prefetch={false}
               data-testid={`project-card-${standbein.id}`}
+              onClick={() => {
+                const nextValues = {
+                  ...createInitialValues(),
+                  projectStandbein: standbein.id,
+                };
+
+                setValues(nextValues);
+                setFiles([]);
+                setErrors({});
+                setSubmitState({ status: "idle" });
+                setCurrentStepIndex(INITIAL_STEP_INDEX);
+                router.push(`/?projekt=${standbein.id}`);
+              }}
             >
               <span className={styles.projectCardKicker}>{standbein.kicker}</span>
               <strong>{standbein.label}</strong>
               <p>{standbein.hint}</p>
-            </Link>
+            </button>
           ))}
         </div>
       </section>
@@ -745,7 +887,9 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
                   renderProjectSelection()
                 ) : (
                   <div className={styles.questionGroupStack}>
-                    {[requiredFields, recommendedFields, deepDiveFields].filter((fields) => fields.length > 0).length > 1 ? (
+                    {currentStep.id === "heating-source-unsure" ? (
+                      <>{renderUnsureCheckGroups(currentFields)}</>
+                    ) : [requiredFields, recommendedFields, deepDiveFields].filter((fields) => fields.length > 0).length > 1 ? (
                       <>
                         {renderQuestionGroup(
                           "Wichtig",

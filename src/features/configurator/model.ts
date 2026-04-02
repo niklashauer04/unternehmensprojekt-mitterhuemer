@@ -13,9 +13,12 @@ export type StepId =
   | "objekt"
   | "heating-system-profile"
   | "heating-existing-system"
+  | "heating-source-unsure"
   | "heating-source-air"
   | "heating-source-geo"
   | "heating-source-water"
+  | "heating-source-pellets"
+  | "heating-source-biomass"
   | "dv-profile"
   | "dv-site"
   | "dv-source-geo"
@@ -63,6 +66,10 @@ export type FieldConfig = {
   helperBody?: string;
   helperItems?: string[];
   customerHint?: string;
+  inlineInfo?: {
+    title: string;
+    body: string;
+  };
   followUpTriggers?: string[];
   options?: ChoiceOption[];
   visibleWhen?: (values: FormValues) => boolean;
@@ -114,6 +121,10 @@ function isHeatingSourceSelected(values: FormValues, source: string) {
   return values.desiredHeatingSystem === source || values.newBuildHeatingSource === source;
 }
 
+function isHeatingConversionStandbein(values: FormValues) {
+  return values.projectStandbein === "umruestung-heizung";
+}
+
 function isDvSourceSelected(values: FormValues, source: string) {
   return values.dvDesiredSource === source;
 }
@@ -131,7 +142,7 @@ function hasPvNeedInNewBuild(values: FormValues) {
 }
 
 function isExistingBuilding(values: FormValues) {
-  return values.projectStage === "bestand" || values.projectStage === "sanierung";
+  return values.projectStage === "bestand" || values.projectStage === "sanierung" || isHeatingConversionStandbein(values);
 }
 
 function hasExistingHeatingSystem(values: FormValues) {
@@ -140,6 +151,46 @@ function hasExistingHeatingSystem(values: FormValues) {
 
 function hasStorage(values: FormValues) {
   return values.heatingStoragePresent === "ja";
+}
+
+function isPelletSourceSelected(values: FormValues) {
+  return values.desiredHeatingSystem === "pellets";
+}
+
+function isBiomassSourceSelected(values: FormValues) {
+  return values.desiredHeatingSystem === "biomasse";
+}
+
+function isUnsureHeatingSourceSelected(values: FormValues) {
+  return values.desiredHeatingSystem === "unschluessig";
+}
+
+function shouldHideOptionForUmruestung(fieldId: string, optionValue: string, values: FormValues) {
+  if (!isHeatingConversionStandbein(values)) {
+    return false;
+  }
+
+  if (fieldId === "contactRequest" && optionValue === "rueckruf") {
+    return true;
+  }
+
+  if (
+    (fieldId === "renovationState" ||
+      fieldId === "heatingDistribution" ||
+      fieldId === "heatingWarmWater" ||
+      fieldId === "heatingBackupSource" ||
+      fieldId === "heatingStoragePresent" ||
+      fieldId === "groundwaterWell") &&
+    optionValue === "unbekannt"
+  ) {
+    return true;
+  }
+
+  if (fieldId === "desiredHeatingSystem" && optionValue === "offen") {
+    return true;
+  }
+
+  return false;
 }
 
 function isNewBuildStandbein(values: FormValues) {
@@ -170,7 +221,7 @@ export const STANDBEINE: StandbeinConfig[] = [
     description: "Für bestehende Wärmepumpen, die erneuert oder neu aufgestellt werden sollen.",
     hint: "Wenn deine Wärmepumpe ersetzt oder modernisiert werden soll.",
     category: "heating",
-    stepIds: ["heating-system-profile", "heating-existing-system", "heating-source-air", "heating-source-geo", "heating-source-water"],
+    stepIds: ["heating-system-profile", "heating-existing-system", "heating-source-unsure", "heating-source-air", "heating-source-geo", "heating-source-water", "heating-source-pellets", "heating-source-biomass"],
   },
   {
     id: "direktverdampfer-austausch",
@@ -188,7 +239,7 @@ export const STANDBEINE: StandbeinConfig[] = [
     description: "Für bestehende Heizsysteme, die umgestellt werden sollen.",
     hint: "Wenn du deine Heizung im Bestand neu ausrichten möchtest.",
     category: "heating",
-    stepIds: ["heating-system-profile", "heating-existing-system", "heating-source-air", "heating-source-geo", "heating-source-water"],
+    stepIds: ["heating-system-profile", "heating-existing-system", "heating-source-unsure", "heating-source-air", "heating-source-geo", "heating-source-water", "heating-source-pellets", "heating-source-biomass"],
   },
   {
     id: "neubau-ausstattung",
@@ -279,11 +330,38 @@ export const STEP_CONFIG: StepConfig[] = [
       "heatingSystemYear",
       "heatingFlowTemperature",
       "heatingAnnualConsumption",
+      "householdPeople",
+      "fireplacePresent",
+      "onePipeSystem",
       "heatingPvPresent",
       "heatingStoragePresent",
       "heatingStorageVolume",
       "heatingOperatingHours",
     ],
+  },
+  {
+    id: "heating-source-unsure",
+    title: "Eignungscheck",
+    shortTitle: "Eignungscheck",
+    description: "Kurz prüfen, was grundsätzlich infrage kommen könnte.",
+    goal: "So ist die Richtung besser eingrenzbar.",
+    intro: "Nur ein kompakter Check zu den wichtigsten Möglichkeiten.",
+    whyItMatters: "Damit wir offen passende Richtungen mitdenken können.",
+    nextStepHint: "Danach geht es weiter.",
+    stage: "detail",
+    fieldIds: [
+      "unsureBiomassStorageSpace",
+      "unsureBiomassSystemType",
+      "unsureAirPlacement",
+      "unsureAirAccess",
+      "unsureGeoDrillingAllowed",
+      "unsureGeoDrillingAccess",
+      "unsureGeoDrillingSpace",
+      "unsureWaterKnownAvailable",
+      "unsureWaterDepth",
+      "unsureWaterPermitPossible",
+    ],
+    visibleWhen: (values) => isUnsureHeatingSourceSelected(values),
   },
   {
     id: "heating-source-air",
@@ -295,7 +373,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "Platz und Umfeld sind hier entscheidend.",
     nextStepHint: "Danach geht es weiter.",
     stage: "detail",
-    fieldIds: ["airOutdoorUnitSpace", "airNoiseSensitivity"],
+    fieldIds: ["airOutdoorUnitSpace", "airAccessWidth", "airOutdoorToTechnicalRoomDistance", "airNoiseSensitivity"],
     visibleWhen: (values) => isHeatingSourceSelected(values, "luft"),
   },
   {
@@ -308,7 +386,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "Fläche und Art der Erdwärme sind hier wichtig.",
     nextStepHint: "Danach geht es weiter.",
     stage: "detail",
-    fieldIds: ["geothermalDrillingChoice", "geothermalArea"],
+    fieldIds: ["geothermalDrillingChoice", "geothermalDrillingAccess", "geothermalDrillingSpace", "geothermalArea"],
     visibleWhen: (values) => isHeatingSourceSelected(values, "erdwaerme"),
   },
   {
@@ -321,8 +399,41 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "Standort und Genehmigung zählen hier früh.",
     nextStepHint: "Danach geht es weiter.",
     stage: "detail",
-    fieldIds: ["groundwaterWell", "groundwaterPermit"],
+    fieldIds: [
+      "groundwaterWell",
+      "groundwaterWellSpace",
+      "groundwaterDepthKnownOrEstimate",
+      "groundwaterDepthValue",
+      "groundwaterKnownIssues",
+      "groundwaterPermit",
+    ],
     visibleWhen: (values) => isHeatingSourceSelected(values, "grundwasser"),
+  },
+  {
+    id: "heating-source-pellets",
+    title: "Pellets",
+    shortTitle: "Pellets",
+    description: "Kurz zu Lager, Kamin und Zufahrt.",
+    goal: "So ist die Machbarkeit schneller einschätzbar.",
+    intro: "Nur die Punkte, die für Pellets wichtig sind.",
+    whyItMatters: "Lager, Kamin und Anlieferung sind hier entscheidend.",
+    nextStepHint: "Danach geht es weiter.",
+    stage: "detail",
+    fieldIds: ["pelletsStorageSpace", "pelletsStorageType", "pelletsChimneyW3g", "pelletsDeliveryAccess"],
+    visibleWhen: (values) => isPelletSourceSelected(values),
+  },
+  {
+    id: "heating-source-biomass",
+    title: "Biomasse",
+    shortTitle: "Biomasse",
+    description: "Kurz zu Lager und Zufahrt.",
+    goal: "So ist die Machbarkeit schneller einschätzbar.",
+    intro: "Nur die Punkte, die für Biomasse wichtig sind.",
+    whyItMatters: "Systemart, Lager und Zufahrt entscheiden hier früh mit.",
+    nextStepHint: "Danach geht es weiter.",
+    stage: "detail",
+    fieldIds: ["biomassType", "biomassFuelStorageSpace", "biomassFuelStorageType", "biomassDeliveryAccess"],
+    visibleWhen: (values) => isBiomassSourceSelected(values),
   },
   {
     id: "dv-profile",
@@ -544,6 +655,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
       { label: "Neubau in Planung", value: "neubau-planung", visibleWhen: (values) => isNewBuildStandbein(values) },
       { label: "Neubau bereits in Umsetzung", value: "neubau-umsetzung", visibleWhen: (values) => isNewBuildStandbein(values) },
     ],
+    visibleWhen: (values) => !isHeatingConversionStandbein(values),
   }),
   defineField({
     id: "heatedArea",
@@ -557,8 +669,8 @@ export const FIELD_CONFIG: FieldConfig[] = [
     min: 20,
     max: 2500,
     required: true,
-    helperText: "Grobe Angabe genügt.",
-    customerHint: "Grobe Angabe genügt.",
+    helperText: "Bitte als grobe Fläche in m² angeben.",
+    customerHint: "Eine grobe Fläche in m² reicht.",
   }),
   defineField({
     id: "buildingYear",
@@ -639,9 +751,12 @@ export const FIELD_CONFIG: FieldConfig[] = [
       { label: "Luftwärmepumpe", value: "luft" },
       { label: "Erdwärme", value: "erdwaerme" },
       { label: "Grundwasser", value: "grundwasser" },
+      { label: "Pellets", value: "pellets", visibleWhen: (values) => isHeatingConversionStandbein(values) },
+      { label: "Biomasse", value: "biomasse", visibleWhen: (values) => isHeatingConversionStandbein(values) },
+      { label: "Ich bin noch unschlüssig", value: "unschluessig", visibleWhen: (values) => isHeatingConversionStandbein(values) },
       { label: "Noch offen", value: "offen" },
     ],
-    followUpTriggers: ["heating-source-air", "heating-source-geo", "heating-source-water"],
+    followUpTriggers: ["heating-source-unsure", "heating-source-air", "heating-source-geo", "heating-source-water", "heating-source-pellets", "heating-source-biomass"],
   }),
   defineField({
     id: "heatingDistribution",
@@ -707,7 +822,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "heatingSystemYear",
     stepId: "heating-existing-system",
-    label: "Alter der Anlage",
+    label: "In welchem Jahr wurde die Anlage in Betrieb genommen?",
     kind: "number",
     purpose: "Alter und Inbetriebnahme helfen uns, die aktuelle Situation besser einzuschätzen.",
     outputKey: "heating.currentSystemYear",
@@ -759,6 +874,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     unit: "l",
     min: 50,
     max: 3000,
+    helperText: "Bitte grob in Litern angeben.",
     customerHint: "Nur wenn du es weißt.",
     visibleWhen: (values) => hasStorage(values),
   }),
@@ -789,6 +905,50 @@ export const FIELD_CONFIG: FieldConfig[] = [
     description: "Optional.",
     customerHint: "Freie Angabe reicht.",
     visibleWhen: (values) => hasExistingHeatingSystem(values),
+  }),
+  defineField({
+    id: "householdPeople",
+    stepId: "heating-existing-system",
+    label: "Wie viele Personen leben im Haus?",
+    kind: "number",
+    priority: "recommended",
+    purpose: "Hilft bei Warmwasser und Auslegung.",
+    outputKey: "heating.householdPeople",
+    min: 1,
+    max: 20,
+    helperText: "Grobe Angabe genügt.",
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
+    id: "fireplacePresent",
+    stepId: "heating-existing-system",
+    label: "Gibt es einen Kamin oder Ofen?",
+    kind: "choice-single",
+    purpose: "Zeigt zusätzliche Wärmequellen im Haus.",
+    outputKey: "heating.fireplacePresent",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
+    id: "onePipeSystem",
+    stepId: "heating-existing-system",
+    label: "Gibt es ein Einrohrsystem?",
+    kind: "choice-single",
+    purpose: "Hilft bei der technischen Einordnung des Bestands.",
+    outputKey: "heating.onePipeSystem",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "unbekannt" },
+    ],
+    inlineInfo: {
+      title: "Einrohrsystem",
+      body: "Bei einer Einrohrheizung hängen die Heizkörper an einem gemeinsamen Heizkreis hintereinander. Das ist für die Einschätzung der Umrüstung hilfreich.",
+    },
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
   }),
   defineField({
     id: "heatingBackupSource",
@@ -835,6 +995,34 @@ export const FIELD_CONFIG: FieldConfig[] = [
     ],
   }),
   defineField({
+    id: "airAccessWidth",
+    stepId: "heating-source-air",
+    label: "Wie gut ist der Zugang außen ungefähr?",
+    kind: "choice-single",
+    purpose: "Hilft bei Aufstellung und Einbringung.",
+    outputKey: "heating.air.accessWidth",
+    options: [
+      { label: "ca. 1 m oder mehr", value: "breit" },
+      { label: "eher eng", value: "eng" },
+      { label: "Weiß ich nicht", value: "unbekannt" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
+    id: "airOutdoorToTechnicalRoomDistance",
+    stepId: "heating-source-air",
+    label: "Wie weit ist es ungefähr bis zum Technikraum?",
+    kind: "choice-single",
+    purpose: "Die Strecke hilft bei der ersten Einordnung.",
+    outputKey: "heating.air.distanceToTechnicalRoom",
+    options: [
+      { label: "Weniger als 5 m", value: "unter-5m" },
+      { label: "5 bis 10 m", value: "5-10m" },
+      { label: "10 m oder mehr", value: "10m-plus" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
     id: "airNoiseSensitivity",
     stepId: "heating-source-air",
     label: "Ist Ruhe am Standort wichtig?",
@@ -863,6 +1051,35 @@ export const FIELD_CONFIG: FieldConfig[] = [
     ],
   }),
   defineField({
+    id: "geothermalDrillingAccess",
+    stepId: "heating-source-geo",
+    label: "Ist eine Zufahrt für ein Bohrgerät grundsätzlich möglich?",
+    kind: "choice-single",
+    priority: "recommended",
+    purpose: "So ist die Bohrbarkeit schneller einschätzbar.",
+    outputKey: "heating.geo.drillingAccess",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher schwierig", value: "schwierig" },
+      { label: "Noch offen", value: "offen" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
+    id: "geothermalDrillingSpace",
+    stepId: "heating-source-geo",
+    label: "Ist rund ums Haus genug Platz für Bohrung oder Arbeiten da?",
+    kind: "choice-single",
+    purpose: "Hilft bei der Einschätzung vor Ort.",
+    outputKey: "heating.geo.drillingSpace",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher knapp", value: "knapp" },
+      { label: "Noch offen", value: "offen" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
+  }),
+  defineField({
     id: "geothermalArea",
     stepId: "heating-source-geo",
     label: "Wie viel Fläche wäre ungefähr frei?",
@@ -877,17 +1094,71 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "groundwaterWell",
     stepId: "heating-source-water",
-    label: "Gibt es am Standort schon Brunnen oder Erfahrungen mit Grundwasser?",
+    label: "Gibt es am Standort schon Brunnen?",
     kind: "choice-single",
     priority: "required",
-    purpose: "So sehen wir, ob Grundwasser grundsätzlich in Frage kommen könnte.",
+    purpose: "So sehen wir, wie die Ausgangslage am Standort ist.",
     outputKey: "heating.water.wellStatus",
     required: true,
     options: [
       { label: "Ja", value: "ja" },
       { label: "Nein", value: "nein" },
+    ],
+  }),
+  defineField({
+    id: "groundwaterWellSpace",
+    stepId: "heating-source-water",
+    label: "Ist Platz für einen Brunnen da?",
+    kind: "choice-single",
+    purpose: "Hilft bei der ersten Machbarkeitseinschätzung.",
+    outputKey: "heating.water.wellSpace",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
       { label: "Weiß ich nicht", value: "unbekannt" },
     ],
+    visibleWhen: (values) => values.groundwaterWell === "nein",
+  }),
+  defineField({
+    id: "groundwaterDepthKnownOrEstimate",
+    stepId: "heating-source-water",
+    label: "Ist die Tiefe bekannt?",
+    kind: "choice-single",
+    purpose: "Hilft bei der ersten Machbarkeitseinschätzung.",
+    outputKey: "heating.water.depthKnown",
+    options: [
+      { label: "Freie Eingabe", value: "eingabe" },
+      { label: "Nicht bekannt", value: "unbekannt" },
+    ],
+    visibleWhen: (values) => values.groundwaterWell === "ja",
+  }),
+  defineField({
+    id: "groundwaterDepthValue",
+    stepId: "heating-source-water",
+    label: "Wie tief ist der Brunnen ungefähr?",
+    kind: "number",
+    purpose: "Die Tiefe hilft bei der ersten Einschätzung.",
+    outputKey: "heating.water.depthValue",
+    unit: "m",
+    min: 1,
+    max: 100,
+    helperText: "Grobe Angabe genügt.",
+    visibleWhen: (values) => values.groundwaterDepthKnownOrEstimate === "eingabe",
+  }),
+  defineField({
+    id: "groundwaterKnownIssues",
+    stepId: "heating-source-water",
+    label: "Gibt es bekannte Probleme?",
+    kind: "choice-single",
+    purpose: "Zeigt mögliche Wasserprobleme früh.",
+    outputKey: "heating.water.knownIssues",
+    options: [
+      { label: "Keine Probleme", value: "keine-probleme" },
+      { label: "Eisen", value: "eisen" },
+      { label: "Kalk", value: "kalk" },
+      { label: "Verschmutzung", value: "verschmutzung" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values),
   }),
   defineField({
     id: "groundwaterPermit",
@@ -898,7 +1169,273 @@ export const FIELD_CONFIG: FieldConfig[] = [
     outputKey: "heating.water.permissionStatus",
     options: [
       { label: "Ja", value: "geklaert" },
-      { label: "Noch zu prüfen", value: "pruefen" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "unsureBiomassStorageSpace",
+    stepId: "heating-source-unsure",
+    label: "Pellets / Biomasse: Platz für Brennstofflager vorhanden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt, ob Lagerung grundsätzlich möglich ist.",
+    outputKey: "heating.unsure.biomass.storageSpace",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Unklar", value: "unklar" },
+    ],
+  }),
+  defineField({
+    id: "unsureBiomassSystemType",
+    stepId: "heating-source-unsure",
+    label: "Pellets / Biomasse: Vollautomatisches System oder manuell?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Hilft bei der ersten Richtungswahl.",
+    outputKey: "heating.unsure.biomass.systemType",
+    required: true,
+    options: [
+      { label: "Vollautomatisch", value: "vollautomatisch" },
+      { label: "Manuell", value: "manuell" },
+      { label: "Unklar", value: "unklar" },
+    ],
+  }),
+  defineField({
+    id: "unsureAirPlacement",
+    stepId: "heating-source-unsure",
+    label: "Luftwärme: Platz für Außengerät oder Hauswand?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt, ob Luftwärme räumlich grundsätzlich passt.",
+    outputKey: "heating.unsure.air.placement",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Unklar", value: "unklar" },
+    ],
+  }),
+  defineField({
+    id: "unsureAirAccess",
+    stepId: "heating-source-unsure",
+    label: "Luftwärme: Zugang grob",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Hilft bei Einbringung und Aufstellung.",
+    outputKey: "heating.unsure.air.access",
+    required: true,
+    options: [
+      { label: "Standard", value: "standard" },
+      { label: "Eng", value: "eng" },
+    ],
+  }),
+  defineField({
+    id: "unsureGeoDrillingAllowed",
+    stepId: "heating-source-unsure",
+    label: "Erdwärme: Tiefenbohrung grundsätzlich erlaubt?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt die erste Machbarkeit für Erdwärme.",
+    outputKey: "heating.unsure.geo.drillingAllowed",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+  }),
+  defineField({
+    id: "unsureGeoDrillingAccess",
+    stepId: "heating-source-unsure",
+    label: "Erdwärme: Zufahrt für Bohrgerät möglich?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Hilft bei der ersten Einschätzung vor Ort.",
+    outputKey: "heating.unsure.geo.drillingAccess",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+  }),
+  defineField({
+    id: "unsureGeoDrillingSpace",
+    stepId: "heating-source-unsure",
+    label: "Erdwärme: Platz für Bohrung vorhanden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt, ob Bohrung oder Arbeiten räumlich passen könnten.",
+    outputKey: "heating.unsure.geo.drillingSpace",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+  }),
+  defineField({
+    id: "unsureWaterKnownAvailable",
+    stepId: "heating-source-unsure",
+    label: "Grundwasser: Grundwasser bekannt vorhanden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt, ob Grundwasser überhaupt infrage kommen könnte.",
+    outputKey: "heating.unsure.water.knownAvailable",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+  }),
+  defineField({
+    id: "unsureWaterDepth",
+    stepId: "heating-source-unsure",
+    label: "Grundwasser: Grundwassertiefe bekannt?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Hilft bei der ersten Einschätzung der Machbarkeit.",
+    outputKey: "heating.unsure.water.depth",
+    required: true,
+    options: [
+      { label: "< 10 m", value: "unter-10m" },
+      { label: "10 - 20 m", value: "10-20m" },
+      { label: "20 m", value: "20m" },
+      { label: "Unbekannt", value: "unbekannt" },
+    ],
+  }),
+  defineField({
+    id: "unsureWaterPermitPossible",
+    stepId: "heating-source-unsure",
+    label: "Grundwasser: Genehmigung grundsätzlich möglich?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt die erste Genehmigungsrichtung.",
+    outputKey: "heating.unsure.water.permitPossible",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+  }),
+  defineField({
+    id: "pelletsStorageSpace",
+    stepId: "heating-source-pellets",
+    label: "Ist Platz für Lagerung vorhanden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Lagerplatz ist die erste Kernfrage bei Biomasse.",
+    outputKey: "heating.pellets.storageSpace",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher knapp", value: "knapp" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "pelletsStorageType",
+    stepId: "heating-source-pellets",
+    label: "Welche Lagerform ist eher vorstellbar?",
+    kind: "choice-single",
+    purpose: "Zeigt die grobe Richtung für das Lager.",
+    outputKey: "heating.pellets.storageType",
+    options: [
+      { label: "Pelletsraum oder Lagerraum", value: "raum" },
+      { label: "Sacksilo oder Gewebetank", value: "silo" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "pelletsChimneyW3g",
+    stepId: "heating-source-pellets",
+    label: "Ist der Kamin feuchteempfindlich oder W3G-geeignet?",
+    kind: "choice-single",
+    purpose: "Der Kamin ist für Pellets technisch wichtig.",
+    outputKey: "heating.pellets.chimneyW3g",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "weiss-ich-nicht" },
+    ],
+    inlineInfo: {
+      title: "W3G / feuchteempfindlich",
+      body: "Bei Pellets ist wichtig, ob der Kamin feuchteunempfindlich bzw. für Brennwertbetrieb geeignet ist. Falls du es nicht sicher weißt, wähle einfach 'Weiß ich nicht'.",
+    },
+  }),
+  defineField({
+    id: "pelletsDeliveryAccess",
+    stepId: "heating-source-pellets",
+    label: "Ist die Anlieferung gut möglich?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Die Zufahrt ist für Pellets wichtig.",
+    outputKey: "heating.pellets.deliveryAccess",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher schwierig", value: "schwierig" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "biomassType",
+    stepId: "heating-source-biomass",
+    label: "Welche Richtung passt eher?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt, ob Stückholz oder Hackgut eher passt.",
+    outputKey: "heating.biomass.type",
+    required: true,
+    options: [
+      { label: "Stückholz", value: "stueckholz" },
+      { label: "Hackgut", value: "hackgut" },
+    ],
+  }),
+  defineField({
+    id: "biomassFuelStorageSpace",
+    stepId: "heating-source-biomass",
+    label: "Ist Platz für Lagerung vorhanden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Lagerplatz ist die erste Kernfrage bei Biomasse.",
+    outputKey: "heating.biomass.storageSpace",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher knapp", value: "knapp" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "biomassFuelStorageType",
+    stepId: "heating-source-biomass",
+    label: "Welche Lagerform ist eher vorstellbar?",
+    kind: "choice-single",
+    purpose: "Zeigt die grobe Richtung für das Lager.",
+    outputKey: "heating.biomass.storageType",
+    options: [
+      { label: "Lagerraum oder Bunker", value: "lagerraum" },
+      { label: "Außenlager", value: "aussenlager" },
+      { label: "Noch offen", value: "offen" },
+    ],
+  }),
+  defineField({
+    id: "biomassDeliveryAccess",
+    stepId: "heating-source-biomass",
+    label: "Ist die Anlieferung gut möglich?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Die Zufahrt ist für Biomasse wichtig.",
+    outputKey: "heating.biomass.deliveryAccess",
+    required: true,
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Eher schwierig", value: "schwierig" },
       { label: "Noch offen", value: "offen" },
     ],
   }),
@@ -1512,7 +2049,9 @@ export function getChoiceLabel(field: FieldConfig, value: string) {
 }
 
 export function getVisibleOptions(field: FieldConfig, values: FormValues) {
-  return (field.options ?? []).filter((option) => !option.visibleWhen || option.visibleWhen(values));
+  return (field.options ?? [])
+    .filter((option) => !option.visibleWhen || option.visibleWhen(values))
+    .filter((option) => !shouldHideOptionForUmruestung(field.id, option.value, values));
 }
 
 export function sanitizeValues(values: FormValues) {

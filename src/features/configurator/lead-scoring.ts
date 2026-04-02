@@ -168,7 +168,12 @@ function getProjectFitDimension(input: ScoringInput, reasons: string[]) {
       reasons.push("Bestehendes fossiles Heizsystem spricht für hohen Beratungsbedarf.");
     }
 
-    if (input.desiredHeatingSystem === "erdwaerme" || input.desiredHeatingSystem === "grundwasser") {
+    if (
+      input.desiredHeatingSystem === "erdwaerme" ||
+      input.desiredHeatingSystem === "grundwasser" ||
+      input.desiredHeatingSystem === "pellets" ||
+      input.desiredHeatingSystem === "biomasse"
+    ) {
       score += 5;
       reasons.push("Die Zielrichtung im Heizpfad ist bereits konkret.");
     } else if (input.desiredHeatingSystem === "luft") {

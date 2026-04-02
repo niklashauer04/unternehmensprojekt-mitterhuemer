@@ -6,6 +6,7 @@ import {
   createInitialValues,
   getActiveSteps,
   getFieldConfig,
+  getVisibleFieldsForStep,
   type FieldValue,
   type StandbeinId,
 } from "../../src/features/configurator/model";
@@ -78,7 +79,6 @@ const scenarios: Scenario[] = [
     projectLabel: "Umrüstung Heizung",
     answers: {
       buildingType: "einfamilienhaus",
-      projectStage: "sanierung",
       heatedArea: "210",
       renovationState: "gut-saniert",
       ownershipStatus: "eigentuemer",
@@ -86,11 +86,18 @@ const scenarios: Scenario[] = [
       heatingDistribution: "heizkoerper",
       heatingWarmWater: "ja",
       heatingCurrentSystem: "gas",
+      householdPeople: "4",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
       heatingBackupSource: "ja",
       groundwaterWell: "ja",
+      groundwaterDepthKnownOrEstimate: "eingabe",
+      groundwaterDepthValue: "7",
+      groundwaterKnownIssues: "keine-probleme",
       projectGoals: ["anlage-tauschen", "komfort-verbessern"],
       fullName: "E2E Umrüstung",
       ...commonContactAnswers,
+      contactRequest: "beratung",
     },
   },
   {
@@ -374,6 +381,211 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expectCurrentStep(page, "heating-source-geo");
   });
 
+  test("zeigt im Umrüstungs-Pfad die reduzierten Antwortoptionen und den Pellets-Folgepfad", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await expect(page.getByTestId("field-projectStage")).toHaveCount(0);
+    await expect(page.getByTestId("option-renovationState-unbekannt")).toHaveCount(0);
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "185",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-system-profile");
+    await expect(page.getByTestId("option-desiredHeatingSystem-pellets")).toBeVisible();
+    await expect(page.getByTestId("option-desiredHeatingSystem-biomasse")).toBeVisible();
+    await expect(page.getByTestId("option-desiredHeatingSystem-unschluessig")).toBeVisible();
+    await expect(page.getByText("Ich bin noch unschlüssig")).toBeVisible();
+    await expect(page.getByTestId("option-desiredHeatingSystem-offen")).toHaveCount(0);
+    await expect(page.getByTestId("option-heatingDistribution-unbekannt")).toHaveCount(0);
+    await expect(page.getByTestId("option-heatingWarmWater-unbekannt")).toHaveCount(0);
+
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "pellets",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-existing-system");
+    await expect(page.getByTestId("option-heatingBackupSource-unbekannt")).toHaveCount(0);
+    await expect(page.getByTestId("option-heatingStoragePresent-unbekannt")).toHaveCount(0);
+    await expect(page.getByTestId("option-fireplacePresent-unbekannt")).toHaveCount(0);
+    await expect(page.getByTestId("field-inline-info-button-onePipeSystem")).toBeVisible();
+
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "3",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-source-pellets");
+    await expect(page.getByTestId("field-pelletsStorageSpace")).toBeVisible();
+    await expect(page.getByTestId("field-pelletsDeliveryAccess")).toBeVisible();
+    await expect(page.getByTestId("field-pelletsChimneyW3g")).toBeVisible();
+    await expect(page.getByTestId("field-inline-info-button-pelletsChimneyW3g")).toBeVisible();
+  });
+
+  test("blendet im Umrüstungs-Pfad Rückruf aus, lässt ihn in anderen Pfaden aber bestehen", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "gut-saniert",
+      heatedArea: "170",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "luft",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "2",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      airOutdoorUnitSpace: "gut",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      projectGoals: ["anlage-tauschen"],
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "uebergabe");
+    await expect(page.getByTestId("option-contactRequest-rueckruf")).toHaveCount(0);
+    await expect(page.getByTestId("option-contactRequest-beratung")).toBeVisible();
+
+    await page.goto("/?projekt=pv-neuanlage");
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      projectStage: "bestand",
+      heatedArea: "150",
+      renovationState: "teilweise-saniert",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+    await fillVisibleStepFields(page, {
+      pvAnnualConsumption: "5000",
+      pvRoofForm: "satteldach",
+      pvRoofOrientation: "sued",
+      pvRoofArea: "70",
+      pvShading: "gering",
+    });
+    await page.getByTestId("wizard-button-next").click();
+    await fillVisibleStepFields(page, {
+      pvStorage: "nein",
+      pvWallbox: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+    await fillVisibleStepFields(page, {
+      projectGoals: ["energiekosten-senken"],
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "uebergabe");
+    await expect(page.getByTestId("option-contactRequest-rueckruf")).toBeVisible();
+  });
+
+  test("aktiviert im Umrüstungs-Pfad nur die passenden Zusatzfelder je Heizquelle", async () => {
+    const baseValues = createInitialValues();
+    baseValues.projectStandbein = "umruestung-heizung";
+    baseValues.buildingType = "einfamilienhaus";
+    baseValues.renovationState = "teilweise-saniert";
+    baseValues.heatedArea = "180";
+    baseValues.ownershipStatus = "eigentuemer";
+    baseValues.heatingDistribution = "heizkoerper";
+    baseValues.heatingWarmWater = "ja";
+
+    const airValues = { ...baseValues, desiredHeatingSystem: "luft" };
+    expect(getActiveSteps(airValues).map((step) => step.id)).toContain("heating-source-air");
+    expect(getVisibleFieldsForStep("heating-source-air", airValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["airOutdoorUnitSpace", "airAccessWidth", "airOutdoorToTechnicalRoomDistance"]),
+    );
+
+    const geoValues = { ...baseValues, desiredHeatingSystem: "erdwaerme" };
+    expect(getActiveSteps(geoValues).map((step) => step.id)).toContain("heating-source-geo");
+    expect(getVisibleFieldsForStep("heating-source-geo", geoValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["geothermalDrillingChoice", "geothermalDrillingAccess", "geothermalDrillingSpace"]),
+    );
+
+    const waterValues = { ...baseValues, desiredHeatingSystem: "grundwasser" };
+    expect(getActiveSteps(waterValues).map((step) => step.id)).toContain("heating-source-water");
+    expect(getFieldConfig("groundwaterWell")?.options?.map((option) => option.value)).toEqual(["ja", "nein"]);
+    expect(getVisibleFieldsForStep("heating-source-water", waterValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["groundwaterWell", "groundwaterKnownIssues", "groundwaterPermit"]),
+    );
+
+    const waterNoWellValues = { ...waterValues, groundwaterWell: "nein" };
+    expect(getVisibleFieldsForStep("heating-source-water", waterNoWellValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["groundwaterWellSpace"]),
+    );
+
+    const waterYesWellValues = { ...waterValues, groundwaterWell: "ja" };
+    expect(getVisibleFieldsForStep("heating-source-water", waterYesWellValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["groundwaterDepthKnownOrEstimate"]),
+    );
+
+    const pelletsValues = { ...baseValues, desiredHeatingSystem: "pellets" };
+    expect(getActiveSteps(pelletsValues).map((step) => step.id)).toContain("heating-source-pellets");
+    expect(getVisibleFieldsForStep("heating-source-pellets", pelletsValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["pelletsStorageSpace", "pelletsChimneyW3g", "pelletsDeliveryAccess"]),
+    );
+
+    const biomassValues = { ...baseValues, desiredHeatingSystem: "biomasse" };
+    expect(getActiveSteps(biomassValues).map((step) => step.id)).toContain("heating-source-biomass");
+    expect(getVisibleFieldsForStep("heating-source-biomass", biomassValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["biomassType", "biomassFuelStorageSpace", "biomassDeliveryAccess"]),
+    );
+
+    const unsureValues = { ...baseValues, desiredHeatingSystem: "unschluessig" };
+    expect(getActiveSteps(unsureValues).map((step) => step.id)).toContain("heating-source-unsure");
+    expect(getVisibleFieldsForStep("heating-source-unsure", unsureValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining([
+        "unsureBiomassStorageSpace",
+        "unsureAirPlacement",
+        "unsureGeoDrillingAllowed",
+        "unsureWaterKnownAvailable",
+      ]),
+    );
+  });
+
+  test("öffnet nach Browser-Zurück dieselbe Projektkarte wieder sauber", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByTestId("project-selection-grid")).toBeVisible();
+
+    await page.getByTestId("project-card-umruestung-heizung").click();
+    await expectCurrentStep(page, "objekt");
+    await expect(page).toHaveURL(/projekt=umruestung-heizung/);
+
+    await page.goBack();
+    await expect(page.getByTestId("project-selection-grid")).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+
+    await page.getByTestId("project-card-umruestung-heizung").click();
+    await expectCurrentStep(page, "objekt");
+    await expect(page).toHaveURL(/projekt=umruestung-heizung/);
+  });
+
   test("blockiert Weiter bei fehlenden Pflichtangaben", async ({ page }) => {
     await page.goto("/?projekt=pv-neuanlage");
     await expectCurrentStep(page, "objekt");
@@ -386,19 +598,15 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expect(page.getByTestId("error-ownershipStatus")).toBeVisible();
   });
 
-  test("zeigt im Umrüstungs-Pfad keine Neubau-Auswahl in der Ausgangslage", async ({ page }) => {
+  test("blendet im Umrüstungs-Pfad die Projektphase im Objekt-Step aus", async ({ page }) => {
     await page.goto("/?projekt=umruestung-heizung");
     await expectCurrentStep(page, "objekt");
 
-    await expect(page.getByTestId("option-projectStage-bestand")).toBeVisible();
-    await expect(page.getByTestId("option-projectStage-sanierung")).toBeVisible();
-    await expect(page.getByTestId("option-projectStage-neubau-planung")).toHaveCount(0);
-    await expect(page.getByTestId("option-projectStage-neubau-umsetzung")).toHaveCount(0);
+    await expect(page.getByTestId("field-projectStage")).toHaveCount(0);
     await expect(page.getByTestId("option-buildingType-neubau")).toHaveCount(0);
 
     await fillVisibleStepFields(page, {
       buildingType: "einfamilienhaus",
-      projectStage: "sanierung",
       renovationState: "teilweise-saniert",
       heatedArea: "180",
       ownershipStatus: "eigentuemer",
@@ -413,12 +621,10 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expectCurrentStep(page, "objekt");
 
     await page.getByTestId("option-buildingType-einfamilienhaus").click();
-    await page.getByTestId("option-projectStage-sanierung").click();
     await page.getByTestId("input-heatedArea").fill("190");
     await page.getByTestId("option-ownershipStatus-eigentuemer").click();
 
     await expect(page.getByTestId("option-buildingType-einfamilienhaus").locator("input")).toBeChecked();
-    await expect(page.getByTestId("option-projectStage-sanierung").locator("input")).toBeChecked();
     await expect(page.getByTestId("input-heatedArea")).toHaveValue("190");
     await expect(page.getByTestId("option-ownershipStatus-eigentuemer").locator("input")).toBeChecked();
   });
@@ -431,6 +637,136 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await page.getByTestId("wizard-button-back").click();
     await expect(page.getByTestId("project-selection-grid")).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
+  });
+
+  test("zeigt das Inline-Info für Einrohrsystem und W3G im Umrüstungs-Pfad", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "180",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "pellets",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await page.getByTestId("field-inline-info-button-onePipeSystem").click();
+    await expect(page.getByTestId("field-inline-info-tooltip-onePipeSystem")).toContainText("Einrohrheizung");
+
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "2",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-source-pellets");
+    await page.getByTestId("field-inline-info-button-pelletsChimneyW3g").click();
+    await expect(page.getByTestId("field-inline-info-tooltip-pelletsChimneyW3g")).toContainText("W3G");
+  });
+
+  test("zeigt im Grundwasser-Pfad nur die passenden Folgefragen je Brunnenstatus", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "180",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "grundwasser",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "2",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-source-water");
+    await expect(page.getByTestId("option-groundwaterWell-unbekannt")).toHaveCount(0);
+    await page.getByTestId("option-groundwaterWell-nein").click();
+    await expect(page.getByTestId("field-groundwaterWellSpace")).toBeVisible();
+    await expect(page.getByTestId("field-groundwaterDepthKnownOrEstimate")).toHaveCount(0);
+
+    await page.getByTestId("option-groundwaterWell-ja").click();
+    await expect(page.getByTestId("field-groundwaterDepthKnownOrEstimate")).toBeVisible();
+    await expect(page.getByTestId("field-groundwaterWellSpace")).toHaveCount(0);
+    await page.getByTestId("option-groundwaterDepthKnownOrEstimate-eingabe").click();
+    await expect(page.getByTestId("field-groundwaterDepthValue")).toBeVisible();
+    await page.getByTestId("input-groundwaterDepthValue").fill("9");
+    await page.getByTestId("option-groundwaterDepthKnownOrEstimate-unbekannt").click();
+    await expect(page.getByTestId("field-groundwaterDepthValue")).toHaveCount(0);
+  });
+
+  test("führt im Umrüstungs-Pfad den Sammel-Step für noch unschlüssige Heizsysteme", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "175",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "unschluessig",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-existing-system");
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "3",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-source-unsure");
+    await expect(page.getByRole("heading", { name: "Pellets / Biomasse" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Luftwärme" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Erdwärme" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Grundwasser" })).toBeVisible();
+
+    await fillVisibleStepFields(page, {
+      unsureBiomassStorageSpace: "ja",
+      unsureBiomassSystemType: "vollautomatisch",
+      unsureAirPlacement: "ja",
+      unsureAirAccess: "standard",
+      unsureGeoDrillingAllowed: "weiss-ich-nicht",
+      unsureGeoDrillingAccess: "ja",
+      unsureGeoDrillingSpace: "ja",
+      unsureWaterKnownAvailable: "weiss-ich-nicht",
+      unsureWaterDepth: "unbekannt",
+      unsureWaterPermitPossible: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "ziele");
   });
 
   test("stellt bei Reload den Draft im aktiven Pfad konsistent wieder her", async ({ page }) => {
