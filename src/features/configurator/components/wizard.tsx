@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
+import type { KeyboardEvent, WheelEvent } from "react";
 import styles from "./wizard.module.css";
 import {
   DRAFT_STORAGE_KEY,
@@ -53,6 +54,18 @@ function getTextValue(value: FormValues[string]) {
 
 function getMultiValue(value: FormValues[string]) {
   return Array.isArray(value) ? value : [];
+}
+
+function blurActiveElement() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const activeElement = document.activeElement;
+
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur();
+  }
 }
 
 function getPreferredContactLabel(values: FormValues) {
@@ -307,6 +320,17 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     updateValue(field.id, nextEntries);
   }
 
+  function handleNumberInputWheel(event: WheelEvent<HTMLInputElement>) {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+
+  function handleNumberInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+    }
+  }
+
   function goToNextStep() {
     if (!currentStep) {
       return;
@@ -320,6 +344,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       return;
     }
 
+    blurActiveElement();
     setErrors({});
     setCurrentStepIndex((index) => Math.min(index + 1, activeSteps.length - 1));
   }
@@ -335,6 +360,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       return;
     }
 
+    blurActiveElement();
     setErrors({});
     setCurrentStepIndex((index) => Math.max(index - 1, 0));
   }
@@ -345,6 +371,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     );
 
     if (firstErroredStepIndex >= 0) {
+      blurActiveElement();
       setCurrentStepIndex(firstErroredStepIndex);
     }
   }
@@ -359,6 +386,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       return;
     }
 
+    blurActiveElement();
     setSubmitState({ status: "submitting" });
 
     try {
@@ -518,7 +546,10 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       const groundwaterInlineField = shouldRenderInlineGroundwaterInput ? getFieldConfig("groundwaterDepthValue") : null;
       const groundwaterInlineError = groundwaterInlineField ? errors[groundwaterInlineField.id] : "";
       const showGroundwaterInlineField =
-        shouldRenderInlineGroundwaterInput && groundwaterInlineField && values.groundwaterDepthKnownOrEstimate === "eingabe";
+        shouldRenderInlineGroundwaterInput &&
+        groundwaterInlineField &&
+        values.groundwaterWell === "ja" &&
+        values.groundwaterDepthKnownOrEstimate !== "unbekannt";
 
       return (
         <div key={field.id} className={styles.choiceField} role="group" aria-label={field.label} {...fieldTestProps}>
@@ -568,9 +599,12 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
                     data-testid={`input-${groundwaterInlineField.id}`}
                     className={groundwaterInlineError ? styles.inputError : styles.inlineChoiceInput}
                     type="number"
+                    inputMode="numeric"
                     min={groundwaterInlineField.min}
                     max={groundwaterInlineField.max}
                     value={getTextValue(values[groundwaterInlineField.id])}
+                    onWheel={handleNumberInputWheel}
+                    onKeyDown={handleNumberInputKeyDown}
                     onChange={(event) => updateValue(groundwaterInlineField.id, event.target.value)}
                   />
                   <small>{groundwaterInlineField.unit}</small>
@@ -605,13 +639,18 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     }
 
     if (field.kind === "file") {
+      const uploadTitle =
+        field.id === "uploads" ? "Zum Beispiel Gebäudepläne, Heizungsfotos oder Typenschilder" : "Dateien hochladen";
+      const uploadHint =
+        field.id === "uploads" ? "Mehrere Dateien möglich, bis 10 MB pro Datei." : "Mehrere Dateien möglich.";
+
       return (
         <div key={field.id} className={styles.uploadField} {...fieldTestProps}>
           {renderFieldHeader(field)}
           {helper}
           <label className={styles.uploadBox}>
-            <span>Dateien hochladen</span>
-            <small>Mehrere Dateien möglich, bis 10 MB pro Datei.</small>
+            <span>{uploadTitle}</span>
+            <small>{uploadHint}</small>
             <input
               data-testid={`input-${field.id}`}
               className="sr-only"
@@ -653,10 +692,13 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
           data-testid={`input-${field.id}`}
           className={error ? styles.inputError : styles.input}
           type={field.kind === "number" ? "number" : field.kind}
+          inputMode={field.kind === "number" ? "numeric" : undefined}
           min={field.min}
           max={field.max}
           value={getTextValue(values[field.id])}
           placeholder={field.placeholder}
+          onWheel={field.kind === "number" ? handleNumberInputWheel : undefined}
+          onKeyDown={field.kind === "number" ? handleNumberInputKeyDown : undefined}
           onChange={(event) => updateValue(field.id, event.target.value)}
         />
         {error ? <p className={styles.errorText} data-testid={`error-${field.id}`}>{error}</p> : null}

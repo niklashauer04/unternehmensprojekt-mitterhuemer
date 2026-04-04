@@ -7,6 +7,7 @@ import {
   getActiveSteps,
   getFieldConfig,
   getVisibleFieldsForStep,
+  sanitizeValues,
   type FieldValue,
   type StandbeinId,
 } from "../../src/features/configurator/model";
@@ -90,8 +91,8 @@ const scenarios: Scenario[] = [
       fireplacePresent: "nein",
       onePipeSystem: "unbekannt",
       heatingBackupSource: "ja",
+      heatingSecondSystem: "oel",
       groundwaterWell: "ja",
-      groundwaterDepthKnownOrEstimate: "eingabe",
       groundwaterDepthValue: "7",
       groundwaterKnownIssues: "keine-probleme",
       projectGoals: ["anlage-tauschen", "komfort-verbessern"],
@@ -417,6 +418,12 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expect(page.getByTestId("option-heatingStoragePresent-unbekannt")).toHaveCount(0);
     await expect(page.getByTestId("option-fireplacePresent-unbekannt")).toHaveCount(0);
     await expect(page.getByTestId("field-inline-info-button-onePipeSystem")).toBeVisible();
+    await expect(page.getByTestId("field-heatingSecondSystem")).toHaveCount(0);
+    await page.getByTestId("option-heatingBackupSource-ja").click();
+    await expect(page.getByTestId("field-heatingSecondSystem")).toBeVisible();
+    await page.getByTestId("option-heatingSecondSystem-oel").click();
+    await page.getByTestId("option-heatingBackupSource-nein").click();
+    await expect(page.getByTestId("field-heatingSecondSystem")).toHaveCount(0);
 
     await fillVisibleStepFields(page, {
       heatingCurrentSystem: "gas",
@@ -542,7 +549,7 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
 
     const waterYesWellValues = { ...waterValues, groundwaterWell: "ja" };
     expect(getVisibleFieldsForStep("heating-source-water", waterYesWellValues).map((field) => field.id)).toEqual(
-      expect.arrayContaining(["groundwaterDepthKnownOrEstimate"]),
+      expect.arrayContaining(["groundwaterDepthKnownOrEstimate", "groundwaterDepthValue"]),
     );
 
     const pelletsValues = { ...baseValues, desiredHeatingSystem: "pellets" };
@@ -567,6 +574,28 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
         "unsureWaterKnownAvailable",
       ]),
     );
+
+    const backupValues = { ...baseValues, heatingBackupSource: "ja" };
+    expect(getVisibleFieldsForStep("heating-existing-system", backupValues).map((field) => field.id)).toEqual(
+      expect.arrayContaining(["heatingSecondSystem"]),
+    );
+  });
+
+  test("bereinigt zweite Heizung und Grundwasser-Tiefe sauber bei Folgeänderungen", async () => {
+    const values = createInitialValues();
+    values.projectStandbein = "umruestung-heizung";
+    values.heatingBackupSource = "nein";
+    values.heatingSecondSystem = "oel";
+    values.groundwaterWell = "ja";
+    values.groundwaterDepthKnownOrEstimate = "unbekannt";
+    values.groundwaterDepthValue = "12";
+    values.groundwaterWellSpace = "ja";
+
+    const sanitized = sanitizeValues(values);
+
+    expect(sanitized.values.heatingSecondSystem).toBe("");
+    expect(sanitized.values.groundwaterDepthValue).toBe("");
+    expect(sanitized.values.groundwaterWellSpace).toBe("");
   });
 
   test("öffnet nach Browser-Zurück dieselbe Projektkarte wieder sauber", async ({ page }) => {
@@ -710,7 +739,6 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await page.getByTestId("option-groundwaterWell-ja").click();
     await expect(page.getByTestId("field-groundwaterDepthKnownOrEstimate")).toBeVisible();
     await expect(page.getByTestId("field-groundwaterWellSpace")).toHaveCount(0);
-    await page.getByTestId("option-groundwaterDepthKnownOrEstimate-eingabe").click();
     await expect(page.getByTestId("field-groundwaterDepthValue")).toBeVisible();
     await page.getByTestId("input-groundwaterDepthValue").fill("9");
     await page.getByTestId("option-groundwaterDepthKnownOrEstimate-unbekannt").click();
@@ -751,6 +779,8 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expect(page.getByRole("heading", { name: "Luftwärme" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Erdwärme" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Grundwasser" })).toBeVisible();
+    await expect(page.getByText("Luftwärme: Zugang für Einbringung grob")).toBeVisible();
+    await expect(page.getByText("Grundwasser: Grundwasser vorhanden bekannt?")).toBeVisible();
 
     await fillVisibleStepFields(page, {
       unsureBiomassStorageSpace: "ja",
@@ -767,6 +797,127 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await page.getByTestId("wizard-button-next").click();
 
     await expectCurrentStep(page, "ziele");
+  });
+
+  test("zeigt konkrete Upload-Hinweise und spinnerfreie Zahlenfelder", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await expect(page.getByTestId("input-heatedArea")).toHaveCSS("appearance", "textfield");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "175",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-system-profile");
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "luft",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-existing-system");
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "3",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-source-air");
+    await fillVisibleStepFields(page, {
+      airOutdoorUnitSpace: "gut",
+      airAccessWidth: "breit",
+      airOutdoorToTechnicalRoomDistance: "unter-5m",
+      airNoiseSensitivity: "normal",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "ziele");
+    await fillVisibleStepFields(page, {
+      projectGoals: ["energiekosten-senken"],
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "uebergabe");
+    await expect(page.getByText("Zum Beispiel Gebäudepläne, Heizungsfotos oder Typenschilder")).toBeVisible();
+    await expect(page.getByText("Gebäudepläne, Fotos der aktuellen Heizung oder Typenschilder")).toBeVisible();
+  });
+
+  test("behält Zahlenfelder beim Weitergehen, Zurückgehen und in der Review stabil", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "175",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-system-profile");
+    await fillVisibleStepFields(page, {
+      desiredHeatingSystem: "luft",
+      heatingDistribution: "heizkoerper",
+      heatingWarmWater: "ja",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-existing-system");
+    await fillVisibleStepFields(page, {
+      heatingCurrentSystem: "gas",
+      householdPeople: "5",
+      fireplacePresent: "nein",
+      onePipeSystem: "unbekannt",
+      heatingBackupSource: "nein",
+    });
+    await expect(page.getByTestId("input-householdPeople")).toHaveValue("5");
+
+    await page.getByTestId("wizard-button-next").click();
+    await expectCurrentStep(page, "heating-source-air");
+    await page.getByTestId("wizard-button-back").click();
+
+    await expectCurrentStep(page, "heating-existing-system");
+    await expect(page.getByTestId("input-householdPeople")).toHaveValue("5");
+
+    await page.getByTestId("wizard-button-next").click();
+    await expectCurrentStep(page, "heating-source-air");
+    await fillVisibleStepFields(page, {
+      airOutdoorUnitSpace: "gut",
+      airAccessWidth: "breit",
+      airOutdoorToTechnicalRoomDistance: "unter-5m",
+      airNoiseSensitivity: "normal",
+    });
+    await page.getByTestId("wizard-button-next").click();
+    await expectCurrentStep(page, "ziele");
+    await fillVisibleStepFields(page, {
+      projectGoals: ["energiekosten-senken"],
+    });
+    await page.getByTestId("wizard-button-next").click();
+    await expectCurrentStep(page, "uebergabe");
+    await fillVisibleStepFields(page, {
+      fullName: "Zahlenfeld Test",
+      email: "zahlenfeld@example.com",
+      phone: "+43123456789",
+      street: "Musterstraße 1",
+      postalCode: "4400",
+      city: "Steyr",
+      budgetRange: "30-50k",
+      timeline: "3-6-monate",
+      contactRequest: "beratung",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "pruefung");
+    await expect(page.getByTestId("wizard-review")).toContainText("5");
   });
 
   test("stellt bei Reload den Draft im aktiven Pfad konsistent wieder her", async ({ page }) => {

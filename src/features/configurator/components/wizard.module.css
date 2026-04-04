@@ -473,6 +473,23 @@
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
+.input[type="number"],
+.inputError[type="number"],
+.inlineChoiceInput[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button,
+.inputError[type="number"]::-webkit-outer-spin-button,
+.inputError[type="number"]::-webkit-inner-spin-button,
+.inlineChoiceInput[type="number"]::-webkit-outer-spin-button,
+.inlineChoiceInput[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .inlineChoiceInputWrap {
   display: grid;
   gap: 6px;

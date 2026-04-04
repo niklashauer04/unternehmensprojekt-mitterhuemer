@@ -326,6 +326,7 @@ export const STEP_CONFIG: StepConfig[] = [
     fieldIds: [
       "heatingCurrentSystem",
       "heatingBackupSource",
+      "heatingSecondSystem",
       "heatingBrand",
       "heatingSystemYear",
       "heatingFlowTemperature",
@@ -966,6 +967,27 @@ export const FIELD_CONFIG: FieldConfig[] = [
     ],
   }),
   defineField({
+    id: "heatingSecondSystem",
+    stepId: "heating-existing-system",
+    label: "Welche zweite Heizung ist das?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Zeigt die zusätzliche Heizquelle im Bestand.",
+    outputKey: "heating.secondSystem",
+    required: true,
+    options: [
+      { label: "Öl", value: "oel" },
+      { label: "Gas", value: "gas" },
+      { label: "Biomasse", value: "biomasse" },
+      { label: "Fernwärme", value: "fernwaerme" },
+      { label: "Wärmepumpe", value: "waermepumpe" },
+      { label: "Direktverdampfer", value: "direktverdampfer" },
+      { label: "Elektro / Direktheizung", value: "elektro" },
+      { label: "Noch nichts / Neubau", value: "keines" },
+    ],
+    visibleWhen: (values) => isHeatingConversionStandbein(values) && values.heatingBackupSource === "ja",
+  }),
+  defineField({
     id: "heatingPvPresent",
     stepId: "heating-existing-system",
     label: "Gibt es schon PV oder ist sie geplant?",
@@ -1143,7 +1165,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     min: 1,
     max: 100,
     helperText: "Grobe Angabe genügt.",
-    visibleWhen: (values) => values.groundwaterDepthKnownOrEstimate === "eingabe",
+    visibleWhen: (values) => values.groundwaterWell === "ja" && values.groundwaterDepthKnownOrEstimate !== "unbekannt",
   }),
   defineField({
     id: "groundwaterKnownIssues",
@@ -1220,15 +1242,15 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureAirAccess",
     stepId: "heating-source-unsure",
-    label: "Luftwärme: Zugang grob",
+    label: "Luftwärme: Zugang für Einbringung grob",
     kind: "choice-single",
     priority: "required",
     purpose: "Hilft bei Einbringung und Aufstellung.",
     outputKey: "heating.unsure.air.access",
     required: true,
     options: [
-      { label: "Standard", value: "standard" },
-      { label: "Eng", value: "eng" },
+      { label: "Standard (ca. 90 bis 100 cm)", value: "standard" },
+      { label: "Eng (ca. 80 cm)", value: "eng" },
     ],
   }),
   defineField({
@@ -1279,7 +1301,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureWaterKnownAvailable",
     stepId: "heating-source-unsure",
-    label: "Grundwasser: Grundwasser bekannt vorhanden?",
+    label: "Grundwasser: Grundwasser vorhanden bekannt?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt, ob Grundwasser überhaupt infrage kommen könnte.",
@@ -1889,7 +1911,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     purpose: "Ergänzt die Anfrage um Unterlagen.",
     outputKey: "attachments.files",
     description: "Optional.",
-    helperText: "Geht auch ohne Upload.",
+    helperText: "Zum Beispiel Gebäudepläne, Fotos der aktuellen Heizung oder Typenschilder. Geht auch ohne Upload.",
   }),
   defineField({
     id: "budgetRange",
@@ -2083,6 +2105,33 @@ export function sanitizeValues(values: FormValues) {
       nextValues[field.id] = "";
       didChange = true;
     }
+  }
+
+  if (nextValues.heatingBackupSource !== "ja" && String(nextValues.heatingSecondSystem ?? "").trim()) {
+    nextValues.heatingSecondSystem = "";
+    didChange = true;
+  }
+
+  if (nextValues.groundwaterWell !== "nein" && String(nextValues.groundwaterWellSpace ?? "").trim()) {
+    nextValues.groundwaterWellSpace = "";
+    didChange = true;
+  }
+
+  if (nextValues.groundwaterWell !== "ja") {
+    if (String(nextValues.groundwaterDepthKnownOrEstimate ?? "").trim()) {
+      nextValues.groundwaterDepthKnownOrEstimate = "";
+      didChange = true;
+    }
+
+    if (String(nextValues.groundwaterDepthValue ?? "").trim()) {
+      nextValues.groundwaterDepthValue = "";
+      didChange = true;
+    }
+  }
+
+  if (nextValues.groundwaterDepthKnownOrEstimate === "unbekannt" && String(nextValues.groundwaterDepthValue ?? "").trim()) {
+    nextValues.groundwaterDepthValue = "";
+    didChange = true;
   }
 
   return {
