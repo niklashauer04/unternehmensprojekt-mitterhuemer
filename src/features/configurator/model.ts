@@ -673,8 +673,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     min: 20,
     max: 2500,
     required: true,
-    helperText: "Bitte als grobe Fläche in m² angeben.",
-    customerHint: "Eine grobe Fläche in m² reicht.",
   }),
   defineField({
     id: "buildingYear",
@@ -749,7 +747,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     priority: "required",
     purpose: "Zeigt die gewünschte Richtung.",
     outputKey: "heating.desiredSystem",
-    description: "Wenn es noch offen ist, klären wir das später.",
     required: true,
     options: [
       { label: "Luftwärmepumpe", value: "luft" },
@@ -832,7 +829,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     outputKey: "heating.currentSystemYear",
     min: 1980,
     max: new Date().getFullYear(),
-    helperText: "Grobe Angabe genügt.",
     visibleWhen: (values) => hasExistingHeatingSystem(values),
   }),
   defineField({
@@ -843,6 +839,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     priority: "recommended",
     purpose: "Bei bestehenden Wärmepumpen ist das ein hilfreicher Hinweis auf den Zustand der Anlage.",
     outputKey: "heating.operatingHours",
+    helperCtaLabel: "Woran erkenne ich das?",
     helperText: "Unter 1.000: Anlage läuft selten, möglicherweise überdimensioniert. Über 2.000: Anlage läuft stark ausgelastet.",
     options: [
       { label: "Unter 1.000 Stunden/Jahr", value: "unter-1000" },
@@ -862,6 +859,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     purpose: "Entscheidend für die Förderfähigkeit einer Umrüstung.",
     outputKey: "heating.districtHeatAvailable",
     required: true,
+    helperCtaLabel: "Was bedeutet das für die Förderung?",
     helperText: "Bei verfügbarem Fernwärmenetz entfällt die Sanierungsförderung (bis zu 7.500 €) für den Wechsel von Gas/Öl auf Wärmepumpe.",
     options: [
       { label: "Ja", value: "ja" },
@@ -932,7 +930,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     unit: "l",
     min: 50,
     max: 3000,
-    helperText: "Bitte grob in Litern angeben.",
     customerHint: "Nur wenn du es weißt.",
     visibleWhen: (values) => hasStorage(values),
   }),
@@ -943,11 +940,10 @@ export const FIELD_CONFIG: FieldConfig[] = [
     kind: "choice-single",
     purpose: "So erkennen wir besser, welche Lösung gut zu Ihrem Haus passen könnte.",
     outputKey: "heating.flowTemperature",
-    description: "Grobe Einschätzung genügt.",
     options: [
-      { label: "eher niedrig", value: "niedrig", hint: "zum Beispiel Fußbodenheizung oder niedrige Heizkörpertemperatur" },
-      { label: "mittel", value: "mittel", hint: "wenn das Haus normale Heizkörpertemperaturen braucht" },
-      { label: "eher hoch", value: "hoch", hint: "wenn es nur mit deutlich warmen Heizkörpern gut funktioniert" },
+      { label: "eher niedrig", value: "niedrig", hint: "z. B. Fußbodenheizung" },
+      { label: "mittel", value: "mittel", hint: "normale Heizkörper" },
+      { label: "eher hoch", value: "hoch", hint: "sehr warme Heizkörper nötig" },
       { label: "weiß ich nicht", value: "unbekannt" },
     ],
     visibleWhen: (values) => hasExistingHeatingSystem(values),
@@ -974,7 +970,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     outputKey: "heating.householdPeople",
     min: 1,
     max: 20,
-    helperText: "Grobe Angabe genügt.",
     visibleWhen: (values) => isHeatingConversionStandbein(values),
   }),
   defineField({
@@ -1066,7 +1061,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     purpose: "So sehen wir, ob Luftwärme vor Ort gut vorstellbar ist.",
     outputKey: "heating.air.outdoorUnitSpace",
     required: true,
-    helperText: "Grobe Einschätzung genügt.",
     options: [
       { label: "gut machbar", value: "gut" },
       { label: "eher eng oder schwierig", value: "eng" },
@@ -1104,7 +1098,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "airNoiseSensitivity",
     stepId: "heating-source-air",
-    label: "Ist Ruhe am Standort wichtig?",
+    label: "Gibt es empfindliche Nachbarn oder Ruhezeiten in der Nähe?",
     kind: "choice-single",
     purpose: "So sehen wir, worauf wir bei der Aufstellung besonders achten sollten.",
     outputKey: "heating.air.noiseSensitivity",
@@ -1122,6 +1116,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     priority: "recommended",
     purpose: "Kühlung ist nur bei Fußboden- oder Flächenheizung sinnvoll möglich.",
     outputKey: "heating.coolingInterest",
+    helperCtaLabel: "Wann ist Kühlung möglich?",
     helperText: "Aktive Kühlung ist nur bei Fußbodenheizung oder Wandheizung möglich, nicht bei klassischen Heizkörpern.",
     options: [
       { label: "Ja, ich bin interessiert", value: "ja" },
@@ -1185,7 +1180,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     unit: "m²",
     min: 50,
     max: 5000,
-    helperText: "Grobe Angabe genügt.",
   }),
   defineField({
     id: "groundwaterWell",
@@ -1238,7 +1232,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     unit: "m",
     min: 1,
     max: 100,
-    helperText: "Grobe Angabe genügt.",
     visibleWhen: (values) => values.groundwaterWell === "ja" && values.groundwaterDepthKnownOrEstimate !== "unbekannt",
   }),
   defineField({
@@ -1301,7 +1294,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureAirPlacement",
     stepId: "heating-source-unsure",
-    label: "Luftwärme: Platz für Außengerät oder Hauswand?",
+    label: "Wäre Platz für ein Außengerät (ca. 1×1 m) vorhanden?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt, ob Luftwärme räumlich grundsätzlich passt.",
@@ -1316,7 +1309,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureAirAccess",
     stepId: "heating-source-unsure",
-    label: "Luftwärme: Zugang für Einbringung grob",
+    label: "Kommt ein größeres Gerät durch die Haustür oder Garage?",
     kind: "choice-single",
     priority: "required",
     purpose: "Hilft bei Einbringung und Aufstellung.",
@@ -1330,7 +1323,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureGeoDrillingAllowed",
     stepId: "heating-source-unsure",
-    label: "Erdwärme: Tiefenbohrung grundsätzlich erlaubt?",
+    label: "Darf auf dem Grundstück gebohrt werden?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt die erste Machbarkeit für Erdwärme.",
@@ -1345,7 +1338,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureGeoDrillingAccess",
     stepId: "heating-source-unsure",
-    label: "Erdwärme: Zufahrt für Bohrgerät möglich?",
+    label: "Kann ein LKW ans Grundstück heranfahren?",
     kind: "choice-single",
     priority: "required",
     purpose: "Hilft bei der ersten Einschätzung vor Ort.",
@@ -1360,7 +1353,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureGeoDrillingSpace",
     stepId: "heating-source-unsure",
-    label: "Erdwärme: Platz für Bohrung vorhanden?",
+    label: "Gibt es eine freie Gartenfläche von ca. 300 m²?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt, ob Bohrung oder Arbeiten räumlich passen könnten.",
@@ -1375,7 +1368,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureWaterKnownAvailable",
     stepId: "heating-source-unsure",
-    label: "Grundwasser: Grundwasser vorhanden bekannt?",
+    label: "Ist bekannt, ob Grundwasser nutzbar ist?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt, ob Grundwasser überhaupt infrage kommen könnte.",
@@ -1390,7 +1383,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureWaterDepth",
     stepId: "heating-source-unsure",
-    label: "Grundwasser: Grundwassertiefe bekannt?",
+    label: "Weißt du, wie tief das Grundwasser liegt?",
     kind: "choice-single",
     priority: "required",
     purpose: "Hilft bei der ersten Einschätzung der Machbarkeit.",
@@ -1406,7 +1399,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "unsureWaterPermitPossible",
     stepId: "heating-source-unsure",
-    label: "Grundwasser: Genehmigung grundsätzlich möglich?",
+    label: "Ist eine wasserrechtliche Genehmigung wahrscheinlich?",
     kind: "choice-single",
     priority: "required",
     purpose: "Zeigt die erste Genehmigungsrichtung.",
@@ -1725,8 +1718,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     required: true,
     min: 1000,
     max: 50000,
-    helperText: "Grobe Angabe genügt.",
-    customerHint: "Grobe Angabe genügt.",
+    customerHint: "Grobe Angabe genügt — Jahresabrechnung reicht.",
   }),
   defineField({
     id: "pvRoofForm",
@@ -1781,7 +1773,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     required: true,
     min: 10,
     max: 1000,
-    helperText: "Grobe Schätzung genügt.",
   }),
   defineField({
     id: "pvShading",
@@ -1807,6 +1798,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     priority: "recommended",
     purpose: "Der Kabelweg beeinflusst Aufwand und Preis der Installation.",
     outputKey: "pv.cableRoute",
+    helperCtaLabel: "Welcher Weg ist am besten?",
     helperText: "Ein freier Kamin oder Leerrohr ist die günstigste Option. Über die Außenfassade ist möglich, aber aufwendiger.",
     options: [
       { label: "Kamin oder Schacht ist frei (optimal)", value: "kamin" },
@@ -1841,6 +1833,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     priority: "recommended",
     purpose: "Separate Zähler (z. B. Wärmepumpe) können zusammengelegt werden, was Einspeisevorteile bringt.",
     outputKey: "pv.meterSituation",
+    helperCtaLabel: "Was bringt das?",
     helperText: "Wenn du eine Wärmepumpe mit eigenem Zähler hast: Diese können wir oft zusammenlegen — das kann steuerliche Vorteile beim Eigenverbrauch bringen.",
     options: [
       { label: "Ein Zähler für alles", value: "ein-zaehler" },

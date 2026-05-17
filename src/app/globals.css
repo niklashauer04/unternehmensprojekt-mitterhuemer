@@ -31,7 +31,7 @@ body {
     radial-gradient(circle at top left, rgba(19, 165, 56, 0.06), transparent 18%),
     radial-gradient(circle at 88% 10%, rgba(230, 0, 126, 0.045), transparent 14%),
     linear-gradient(180deg, #ffffff 0%, var(--background) 58%, #fafafa 100%);
-  font-family: var(--font-sora), sans-serif;
+  font-family: var(--font-figtree), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -40,7 +40,7 @@
 | Primärfarbe Grün | `#13a538` |
 | Akzentfarbe Pink | `#e6007e` (sparsam) |
 | Hintergrund | Weiß |
-| Schriftart | **Sora** (Regular / Medium / SemiBold) |
+| Schriftart | **Figtree** (Regular / Medium / SemiBold) |
 | Regel | Grün und Pink niemals im selben Element |
 
 ## 5. ARCHITEKTUR-ÜBERBLICK

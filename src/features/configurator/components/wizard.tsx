@@ -46,8 +46,8 @@ type SubmitErrorResponse = {
 
 const EMPTY_VALUES = createInitialValues();
 const INITIAL_STEP_INDEX = 1;
-const BRAND_CLAIM = "Zum passenden Projekt.";
-const BRAND_SUBLINE = "Ein paar Fragen. Dann weißt du, wie es weitergeht.";
+const BRAND_CLAIM = "Heizung & PV — passend konfiguriert.";
+const BRAND_SUBLINE = "In wenigen Minuten zur Lösung. Mit direktem Kostenrahmen.";
 
 function getTextValue(value: FormValues[string]) {
   return Array.isArray(value) ? "" : value;
@@ -839,14 +839,14 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
       <main className={styles.page} data-testid="configurator-success-page">
         <section className={styles.wizardFrame}>
           <section className={styles.brandBanner}>
-            <div className={styles.brandBannerBar}>
+            <div className={styles.brandBannerInner}>
               <div className={styles.logoWrap}>
-                <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={180} height={34} priority />
+                <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={160} height={30} priority />
               </div>
-            </div>
-            <div className={styles.brandBannerCopy}>
-              <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
-              <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+              <div className={styles.brandBannerCopy}>
+                <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
+                <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+              </div>
             </div>
           </section>
 
@@ -893,14 +893,14 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     <main className={styles.page} data-testid="configurator-wizard" data-step-id={currentStep.id}>
       <section className={styles.wizardFrame}>
         <section className={styles.brandBanner}>
-          <div className={styles.brandBannerBar}>
+          <div className={styles.brandBannerInner}>
             <div className={styles.logoWrap}>
-              <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={180} height={34} priority />
+              <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={160} height={30} priority />
             </div>
-          </div>
-          <div className={styles.brandBannerCopy}>
-            <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
-            <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+            <div className={styles.brandBannerCopy}>
+              <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
+              <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+            </div>
           </div>
         </section>
 
