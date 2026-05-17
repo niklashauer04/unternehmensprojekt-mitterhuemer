@@ -22,9 +22,13 @@ function isNumberValue(value: FieldValue) {
   return typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value));
 }
 
-function getRequiredError(field: FieldConfig, value: FieldValue) {
+function getRequiredError(field: FieldConfig, value: FieldValue, files: File[] = []) {
   if (!isFieldRequired(field)) {
     return "";
+  }
+
+  if (field.kind === "file") {
+    return files.length > 0 ? "" : "Bitte lade mindestens ein Foto hoch.";
   }
 
   if (isFieldValuePresent(field, value)) {
@@ -46,7 +50,7 @@ export function validateField(fieldId: string, values: FormValues, files: File[]
   }
 
   const value = values[field.id];
-  const requiredError = getRequiredError(field, value);
+  const requiredError = getRequiredError(field, value, files);
 
   if (requiredError) {
     return requiredError;
