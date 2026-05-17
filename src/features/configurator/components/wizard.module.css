@@ -1,5 +1,5 @@
 .page {
-  width: min(1040px, calc(100vw - 32px));
+  width: min(1200px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 24px 0 64px;
 }
@@ -806,5 +806,29 @@
   .reviewList strong {
     max-width: none;
     text-align: left;
+  }
+}
+
+.priceLayout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+.priceSidebar {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 900px) {
+  .priceLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .priceSidebar {
+    position: static;
+    order: 2;
   }
 }

@@ -1,0 +1,109 @@
+.indicator {
+  background: #f8fdf9;
+  border: 1.5px solid #13a538;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #13a538;
+}
+
+.sublabel {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.priceRange,
+.priceExact {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.rangeLabel {
+  font-size: 13px;
+  color: #888;
+}
+
+.rangeValues,
+.exactValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.foerderung {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid #d4f0dc;
+}
+
+.foerderungLabel {
+  font-size: 13px;
+  color: #555;
+}
+
+.foerderungValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #13a538;
+}
+
+.netto {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nettoLabel {
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+}
+
+.nettoValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.hint {
+  font-size: 12px;
+  color: #13a538;
+  background: #edfaf1;
+  border-radius: 6px;
+  padding: 6px 10px;
+  line-height: 1.4;
+}
+
+.disclaimer {
+  font-size: 11px;
+  color: #aaa;
+  font-style: italic;
+  line-height: 1.4;
+}

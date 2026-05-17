@@ -25,6 +25,7 @@ import {
 } from "../model";
 import { buildReviewSections } from "../summary";
 import { validateAll, validateField, validateStep } from "../validation";
+import { PriceIndicator } from "./price-indicator";
 import type { SubmissionResult } from "../storage";
 
 type SubmitState =
@@ -904,6 +905,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
         </section>
 
         <div className={styles.frameBody}>
+          <div className={styles.priceLayout}>
           <section className={styles.workspace}>
             <div className={styles.stepShell}>
               <div className={styles.stepHeader} data-testid="wizard-progress">
@@ -1002,6 +1004,10 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
               </div>
             </div>
           </section>
+          <div className={styles.priceSidebar}>
+            <PriceIndicator values={values} />
+          </div>
+          </div>
         </div>
       </section>
     </main>

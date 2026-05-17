@@ -2,6 +2,7 @@ import {
   calculateLeadScore,
   type QualificationAssessment,
 } from "./lead-scoring";
+import { calculatePvPrice, calculateHeatingPrice } from "./pricing";
 import {
   formatFieldValue,
   getActiveSteps,
@@ -270,6 +271,10 @@ export function buildSubmissionRecord(values: FormValues, attachments: string[])
     requiredTotal: completion.requiredTotal,
     recommendedAnswered: completion.recommendedAnswered,
     recommendedTotal: completion.recommendedTotal,
+    heatingBudgetSegment: String(values.heatingBudgetSegment ?? ""),
+    heatingDistrictHeat: String(values.heatingDistrictHeat ?? ""),
+    heatingCompetition: String(values.heatingCompetition ?? ""),
+    pvGoal: String(values.pvGoal ?? ""),
   });
   const contactExpectation = getContactExpectation(String(values.contactRequest ?? ""), String(values.timeline ?? ""));
   const keySignals = assessment.reasons.slice(0, 4);
@@ -336,7 +341,27 @@ export function buildSubmissionRecord(values: FormValues, attachments: string[])
   };
 }
 
-export function createSummaryMarkdown(record: SubmissionRecord) {
+export function createSummaryMarkdown(record: SubmissionRecord, values?: FormValues) {
+  const pvPrice = values ? calculatePvPrice(values) : null;
+  const heatingPrice = values ? calculateHeatingPrice(values) : null;
+  const priceResult = pvPrice ?? heatingPrice;
+
+  const priceSection = priceResult
+    ? `\n## Kostenindikation\n${[
+        `**Kostenrahmen:** ca. ${priceResult.range.min.toLocaleString("de-AT")} – ${priceResult.range.max.toLocaleString("de-AT")} €`,
+        priceResult.foerderung > 0
+          ? `**Förderung:** ca. – ${priceResult.foerderung.toLocaleString("de-AT")} €`
+          : null,
+        priceResult.foerderung > 0
+          ? `**Netto ca.:** ${priceResult.netto.toLocaleString("de-AT")} €`
+          : null,
+        priceResult.foerderungHint ? `_${priceResult.foerderungHint}_` : null,
+        `_* Orientierungswert — kein verbindliches Angebot_`,
+      ]
+        .filter(Boolean)
+        .join("\n")}`
+    : "";
+
   return `# Mitterhuemer Konfigurator Zusammenfassung
 
 ## Schnellüberblick
@@ -383,5 +408,5 @@ ${section.entries.map((entry) => `- ${entry.label}: ${entry.value}`).join("\n")}
 
 ## Dateien
 ${record.qualification.attachments.length > 0 ? record.qualification.attachments.map((file) => `- ${file}`).join("\n") : "- Keine Anhänge"}
-`;
+${priceSection}`;
 }

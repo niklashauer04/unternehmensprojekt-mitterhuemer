@@ -41,6 +41,11 @@ export type ScoringInput = {
   requiredTotal: number;
   recommendedAnswered: number;
   recommendedTotal: number;
+  // Neue Felder aus Interview-Erkenntnissen
+  heatingBudgetSegment?: string;
+  heatingDistrictHeat?: string;
+  heatingCompetition?: string;
+  pvGoal?: string;
 };
 
 function clampScore(value: number) {
@@ -96,6 +101,15 @@ function getReadinessDimension(input: ScoringInput, reasons: string[]) {
     score += 5;
   } else {
     score += 2;
+  }
+
+  // Wettbewerbssituation
+  if (input.heatingCompetition === "erst") {
+    score += 3;
+    reasons.push("Mitterhuemer ist erstes angefragtes Unternehmen — günstiger Ausgangspunkt.");
+  } else if (input.heatingCompetition === "mehrere") {
+    score -= 3;
+    reasons.push("Mehrere Angebote eingeholt — erhöhter Wettbewerbsdruck.");
   }
 
   return clampScore(score);
@@ -154,6 +168,26 @@ function getCommercialDimension(input: ScoringInput, reasons: string[]) {
     if ((input.pvExpansionGoal?.length ?? 0) > 0) {
       score += 2;
     }
+  }
+
+  // Heizung-Budget-Segment
+  if (input.heatingBudgetSegment === "premium") {
+    score += 4;
+    reasons.push("Premium-Budget signalisiert höheres Auftragsvolumen.");
+  } else if (input.heatingBudgetSegment === "budget") {
+    score -= 2;
+  }
+
+  // Fernwärme senkt Förderpotenzial
+  if (input.heatingDistrictHeat === "ja") {
+    score -= 4;
+    reasons.push("Verfügbare Fernwärme schränkt Fördermöglichkeiten ein.");
+  }
+
+  // PV-Ziel Vollbelegung = höheres Auftragsvolumen
+  if (input.pvGoal === "vollbelegung") {
+    score += 2;
+    reasons.push("Vollbelegung als PV-Ziel deutet auf größeres Anlagenvolumen hin.");
   }
 
   return clampScore(score);
