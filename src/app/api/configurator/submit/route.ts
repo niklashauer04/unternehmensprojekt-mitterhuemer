@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
         {
-          message: "Bitte pruefen Sie die markierten Angaben.",
+          message: "Bitte prüfe die markierten Angaben.",
           errors,
         },
         { status: 400 },
