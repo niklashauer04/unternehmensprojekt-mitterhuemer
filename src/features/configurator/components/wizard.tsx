@@ -328,7 +328,7 @@ export function ConfiguratorWizard() {
             />
           </label>
           <ul className={styles.fileList}>
-            {files.length > 0 ? files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>) : <li>Keine Dateien ausgewaehlt</li>}
+            {files.length > 0 ? files.map((file) => <li key={`${file.name}-${file.size}`}>{file.name}</li>) : <li>Keine Dateien ausgewählt</li>}
           </ul>
           {error ? <p className={styles.errorText}>{error}</p> : null}
         </div>
@@ -362,9 +362,9 @@ export function ConfiguratorWizard() {
       <main className={styles.page}>
         <section className={styles.successShell}>
           <p className={styles.kicker}>Vielen Dank</p>
-          <h1>Ihre Anfrage ist bei uns eingelangt.</h1>
+          <h1>Deine Anfrage ist bei uns eingelangt.</h1>
           <p className={styles.successLead}>
-            Wir sehen uns Ihre Angaben nun an und melden uns mit dem passenden nächsten Schritt bei Ihnen.
+            Wir schauen uns deine Angaben nun an und melden uns mit dem passenden nächsten Schritt bei dir.
           </p>
           <div className={styles.successGrid}>
             <div>
@@ -377,7 +377,7 @@ export function ConfiguratorWizard() {
             </div>
             <div>
               <span>Hinweis</span>
-              <strong>falls noetig, fragen wir gezielt fehlende Details nach</strong>
+              <strong>Bei Bedarf fragen wir gezielt nach fehlenden Details</strong>
             </div>
           </div>
           <button type="button" className={styles.primaryButton} onClick={resetWizard}>
@@ -408,16 +408,15 @@ export function ConfiguratorWizard() {
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <h1>Ihr Projekt, Ihr Pfad.</h1>
+          <h1>Dein Projekt, dein Pfad.</h1>
           <p>
-            Wählen Sie Ihr Anliegen — danach sehen Sie nur noch die Fragen, die für Ihr Vorhaben wirklich relevant
-            sind.
+            Wähle dein Anliegen — danach siehst du nur noch die Fragen, die für dein Vorhaben wirklich relevant sind.
           </p>
         </div>
         <div className={styles.heroFacts}>
           <div>
             <span>Geführt</span>
-            <strong>jede Auswahl oeffnet nur den passenden Unterpfad</strong>
+            <strong>jede Auswahl öffnet nur den passenden Unterpfad</strong>
           </div>
           <div>
             <span>Verständlich</span>
@@ -439,7 +438,7 @@ export function ConfiguratorWizard() {
               </p>
               <h2>{currentStep.title}</h2>
               <p>{currentStep.description}</p>
-              {selectedStandbein ? <p className={styles.pathInfo}>Aktiver Projektpfad: {selectedStandbein.label}</p> : null}
+              {selectedStandbein ? <p className={styles.pathInfo}>Dein Projektpfad: {selectedStandbein.label}</p> : null}
             </div>
             <div className={styles.progressBar} aria-hidden="true">
               <div className={styles.progressValue} style={{ width: `${progress}%` }} />
@@ -498,15 +497,15 @@ export function ConfiguratorWizard() {
             <div className={styles.trustCard}>
               <h3>Gut zu wissen</h3>
               <p>
-                Sie müssen nicht jede technische Frage perfekt beantworten. Wenn etwas unklar ist, helfen wir Ihnen im
+                Du musst nicht jede technische Frage perfekt beantworten. Wenn etwas unklar ist, helfen wir dir im
                 Ablauf weiter oder klären offene Punkte später gemeinsam.
               </p>
             </div>
             <div className={styles.trustCard}>
               <h3>Warum wir manche Angaben fragen</h3>
               <p>
-                Mit wenigen gezielten Informationen können wir Ihren Projektpfad besser einschätzen und uns passend statt
-                allgemein bei Ihnen melden.
+                Mit wenigen gezielten Informationen können wir deinen Projektpfad besser einschätzen und uns passend statt
+                allgemein bei dir melden.
               </p>
             </div>
           </div>

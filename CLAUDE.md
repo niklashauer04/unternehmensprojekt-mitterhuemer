@@ -61,6 +61,38 @@ Kein digitaler Self-Service-Einstieg, Leads werden zu spät qualifiziert. Der Ko
 
 ---
 
+## Wording & Tonalität
+
+**Anrede:** immer **„du"** — nie „Sie". Konsistent mit mitterhuemer.at.
+
+**Tonalität:** nahbar, direkt, kompetent — nicht werblich übertrieben.
+
+**Stil-Referenz (mitterhuemer.at):**
+- Kurze, aktive Sätze: „Wir beraten dich.", „Wähle deinen Pfad."
+- Benefit-Sprache: „so genießt du", „kannst du", „wirst du unabhängiger"
+- Fachlich aber verständlich — technische Begriffe kurz erklären, nicht vermeiden
+- Regionalität als Selbstverständlichkeit, nicht als Verkaufsargument
+
+**Typische Phrasen (von mitterhuemer.at übernehmen):**
+
+| Phrase | Verwendung |
+|---|---|
+| „für dein Zuhause" | Allgemeine Benefit-Aussagen |
+| „von der Planung bis zur Umsetzung" | Service-Beschreibungen |
+| „wir beraten dich gerne" | Kontakt-CTAs |
+| „jetzt anfragen" | Primärer CTA-Button |
+| „gewerkeübergreifend" | Komplettpaket-Versprechen |
+| „einziger Ansprechpartner" | Differenzierungsmerkmal |
+| „hochwertig", „fachmännisch" | Qualitätsbeschreibungen |
+
+**Verboten:**
+- Formelles „Sie/Ihnen/Ihr" in jeglicher Kundenkommunikation
+- ae/ue/oe statt ä/ü/ö — immer echte Umlaute verwenden
+- „ss" statt „ß" wo „ß" korrekt ist (Straße, groß, Fußbodenheizung, weiß)
+- Übertrieben werbliche Adjektive ohne Substanz
+
+---
+
 ## Glossar
 
 | Begriff | Bedeutung |
