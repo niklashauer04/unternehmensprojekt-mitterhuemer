@@ -29,7 +29,7 @@ body {
   background:
     radial-gradient(circle at top right, rgba(230, 0, 126, 0.04), transparent 16%),
     linear-gradient(180deg, #fbfaf8 0%, var(--background) 58%, #f1ede7 100%);
-  font-family: var(--font-sora), sans-serif;
+  font-family: var(--font-figtree), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

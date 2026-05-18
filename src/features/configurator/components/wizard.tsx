@@ -29,6 +29,9 @@ type DraftState = {
 
 const EMPTY_VALUES = createInitialValues();
 
+const BRAND_CLAIM = "Heizung & PV — passend konfiguriert.";
+const BRAND_SUBLINE = "In wenigen Minuten zur Loesung. Mit direktem Kostenrahmen.";
+
 function getTextValue(value: FormValues[string]) {
   return Array.isArray(value) ? "" : value;
 }
@@ -390,28 +393,38 @@ export function ConfiguratorWizard() {
 
   return (
     <main className={styles.page}>
+      <section className={styles.brandBanner}>
+        <div className={styles.brandBannerInner}>
+          <div className={styles.logoWrap}>
+            <span className={styles.logoText}>Mitterhuemer</span>
+          </div>
+          <div className={styles.brandBannerCopy}>
+            <p className={styles.brandClaim}>{BRAND_CLAIM}</p>
+            <p className={styles.brandSubline}>{BRAND_SUBLINE}</p>
+          </div>
+        </div>
+      </section>
+
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.kicker}>Mitterhuemer</p>
-          <h1>Ihr Projekt folgt dem Standbein, nicht einem starren Formular.</h1>
+          <h1>Ihr Projekt, Ihr Pfad.</h1>
           <p>
-            Wir fuehren Sie wie in einer digitalen Beratung durch genau den Ablauf, der zu Ihrem Vorhaben passt. Nach
-            der Auswahl des passenden Standbeins oeffnen sich nur noch die Fragen, die fuer Ihr Projekt wirklich
-            relevant sind.
+            Waehlen Sie Ihr Anliegen — danach sehen Sie nur noch die Fragen, die fuer Ihr Vorhaben wirklich relevant
+            sind.
           </p>
         </div>
         <div className={styles.heroFacts}>
           <div>
             <span>Gefuehrt</span>
-            <strong>jedes Standbein hat seine eigene Schrittfolge und eigene Unterpfade</strong>
+            <strong>jede Auswahl oeffnet nur den passenden Unterpfad</strong>
           </div>
           <div>
             <span>Verstaendlich</span>
-            <strong>mit Hilfen dort, wo technische Begriffe schnell unklar werden</strong>
+            <strong>Hilfen dort, wo technische Begriffe auftauchen</strong>
           </div>
           <div>
-            <span>Reduziert</span>
-            <strong>kundenseitig, mobil gut benutzbar und ohne interne Lead-Sprache</strong>
+            <span>Schnell</span>
+            <strong>wenige Minuten, direkte Kostenorientierung am Ende</strong>
           </div>
         </div>
       </section>
