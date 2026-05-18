@@ -1,4 +1,14 @@
+# System
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependencies
 node_modules
 .next
 out
