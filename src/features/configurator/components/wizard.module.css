@@ -4,6 +4,54 @@
   padding: 24px 0 56px;
 }
 
+.brandBanner {
+  border-radius: 28px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #13a538 0%, #109132 100%);
+}
+
+.brandBannerInner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 28px;
+  flex-wrap: wrap;
+}
+
+.logoWrap {
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.03em;
+}
+
+.brandBannerCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brandClaim {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.brandSubline {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 400;
+  margin: 0;
+}
+
 .hero,
 .progressPanel,
 .formCard,

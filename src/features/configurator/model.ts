@@ -386,7 +386,6 @@ export const FIELD_CONFIG: FieldConfig[] = [
     min: 20,
     max: 2500,
     required: true,
-    helperText: "Eine grobe Schaetzung reicht voellig aus.",
   },
   {
     id: "buildingYear",
@@ -506,7 +505,9 @@ export const FIELD_CONFIG: FieldConfig[] = [
     kind: "number",
     min: 1980,
     max: new Date().getFullYear(),
-    helperText: "Eine ungefaehre Angabe reicht. Oft findet man das Baujahr auf Unterlagen, Serviceberichten oder am Typenschild.",
+    helperCtaLabel: "Wo finde ich das?",
+    helperTitle: "Baujahr schnell herausfinden",
+    helperBody: "Eine ungefaehre Angabe genuegt. Haeufig steht das Baujahr auf dem Typenschild der Anlage, in Serviceberichten oder alten Unterlagen.",
     visibleWhen: (values) => values.heatingCurrentSystem !== "keines",
   },
   {
@@ -516,8 +517,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     kind: "number",
     min: 0,
     max: 300000,
-    helperText: "Nur wenn Sie die Zahl leicht finden. Sonst koennen Sie das Feld leer lassen.",
-    helperCtaLabel: "Wo finde ich das?",
+    helperCtaLabel: "Woran erkenne ich das?",
     helperTitle: "Betriebsstunden finden",
     helperBody: "Bei bestehenden Waermepumpen oder Direktverdampfern steht diese Angabe haeufig im Displaymenue oder in Serviceunterlagen.",
     visibleWhen: (values) =>
@@ -553,7 +553,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     label: "Wie schaetzen Sie die Platzverhaeltnisse fuer ein Aussengeraet ein?",
     kind: "choice-single",
     required: true,
-    helperText: "Uns reicht Ihre grobe Einschaetzung. Im Zweifel pruefen wir das spaeter gemeinsam.",
+    description:"Uns reicht Ihre grobe Einschaetzung. Im Zweifel pruefen wir das spaeter gemeinsam.",
     options: [
       { label: "genug Platz vorhanden", value: "gut" },
       { label: "eng / nur eingeschraenkt moeglich", value: "eng" },
@@ -592,7 +592,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     unit: "m2",
     min: 50,
     max: 5000,
-    helperText: "Nur als grobe Orientierung fuer Garten oder Freiflaeche.",
+    description:"Grobe Orientierung fuer Garten oder Freiflaeche genuegt.",
   },
   {
     id: "groundwaterWell",
@@ -742,7 +742,9 @@ export const FIELD_CONFIG: FieldConfig[] = [
     required: true,
     min: 1000,
     max: 50000,
-    helperText: "Die Zahl steht meist auf der Jahresabrechnung. Eine grobe Angabe reicht zur ersten Einschaetzung.",
+    helperCtaLabel: "Wo finde ich das?",
+    helperTitle: "Jahresstromverbrauch ablesen",
+    helperBody: "Die Kilowattstunden-Zahl steht auf Ihrer letzten Jahresabrechnung vom Stromversorger. Eine grobe Angabe reicht voellig aus.",
   },
   {
     id: "pvRoofForm",
@@ -788,7 +790,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     required: true,
     min: 10,
     max: 1000,
-    helperText: "Eine grobe Schaetzung ist genug. Fotos oder Plaene helfen uns spaeter beim genaueren Blick.",
+    description:"Fotos oder Plaene helfen uns spaeter beim genaueren Blick.",
   },
   {
     id: "pvShading",
@@ -924,7 +926,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     label: "Welcher Budgetrahmen ist realistisch?",
     kind: "choice-single",
     required: true,
-    helperText: "Auch eine grobe Richtung hilft uns schon sehr bei der passenden Empfehlung.",
+    description:"Auch eine grobe Richtung hilft uns schon sehr bei der passenden Empfehlung.",
     options: [
       { label: "unter 15.000 Euro", value: "unter-15k" },
       { label: "15.000 bis 30.000 Euro", value: "15-30k" },
@@ -939,7 +941,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     label: "Wann soll das Projekt idealerweise umgesetzt werden?",
     kind: "choice-single",
     required: true,
-    helperText: "Damit wir die Anfrage zeitlich richtig einordnen und passend begleiten koennen.",
+    description:"Damit wir die Anfrage zeitlich richtig einordnen und passend begleiten koennen.",
     options: [
       { label: "sofort / in 0-3 Monaten", value: "0-3-monate" },
       { label: "in 3-6 Monaten", value: "3-6-monate" },
@@ -952,7 +954,7 @@ export const FIELD_CONFIG: FieldConfig[] = [
     label: "Wie duerfen wir Sie am besten weiter begleiten?",
     kind: "choice-single",
     required: true,
-    helperText: "So melden wir uns in der Form, die fuer Sie am angenehmsten ist.",
+    description:"So melden wir uns in der Form, die fuer Sie am angenehmsten ist.",
     options: [
       { label: "telefonische Beratung", value: "beratung" },
       { label: "Rueckruf", value: "rueckruf" },
