@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
+import Image from "next/image";
 import styles from "./wizard.module.css";
 import {
   DRAFT_STORAGE_KEY,
@@ -396,7 +397,7 @@ export function ConfiguratorWizard() {
       <section className={styles.brandBanner}>
         <div className={styles.brandBannerInner}>
           <div className={styles.logoWrap}>
-            <span className={styles.logoText}>Mitterhuemer</span>
+            <Image src="/mitterhuemer-logo.svg" alt="Mitterhuemer" width={160} height={40} priority />
           </div>
           <div className={styles.brandBannerCopy}>
             <p className={styles.brandClaim}>{BRAND_CLAIM}</p>

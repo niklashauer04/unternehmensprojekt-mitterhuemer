@@ -23,12 +23,6 @@
   flex-shrink: 0;
 }
 
-.logoText {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.03em;
-}
 
 .brandBannerCopy {
   display: flex;
@@ -180,7 +174,7 @@
 .progressValue {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1a1b1b, #434343);
+  background: linear-gradient(90deg, #13a538, #109132);
   transition: width 0.24s ease;
 }
 
@@ -212,7 +206,7 @@
 }
 
 .phasePillActive {
-  background: #1a1b1b;
+  background: #13a538;
   color: #fff;
   border-color: transparent;
 }
@@ -287,10 +281,10 @@
 }
 
 .choiceCardActive {
-  background: #1a1b1b;
+  background: #13a538;
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 16px 28px rgba(23, 23, 23, 0.16);
+  box-shadow: 0 16px 28px rgba(19, 165, 56, 0.2);
 }
 
 .choiceCard small,
@@ -316,8 +310,8 @@
 .input:focus,
 .inputError:focus {
   outline: none;
-  border-color: #1a1b1b;
-  box-shadow: 0 0 0 4px rgba(26, 27, 27, 0.08);
+  border-color: #13a538;
+  box-shadow: 0 0 0 4px rgba(19, 165, 56, 0.12);
 }
 
 .inputError {
@@ -371,7 +365,7 @@
 
 .primaryButton {
   border: 0;
-  background: #1a1b1b;
+  background: #13a538;
   color: #fff;
   font-weight: 600;
 }
