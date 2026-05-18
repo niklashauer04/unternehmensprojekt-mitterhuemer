@@ -31,7 +31,7 @@ type DraftState = {
 const EMPTY_VALUES = createInitialValues();
 
 const BRAND_CLAIM = "Heizung & PV — passend konfiguriert.";
-const BRAND_SUBLINE = "In wenigen Minuten zur Loesung. Mit direktem Kostenrahmen.";
+const BRAND_SUBLINE = "In wenigen Minuten zur Lösung. Mit direktem Kostenrahmen.";
 
 function getTextValue(value: FormValues[string]) {
   return Array.isArray(value) ? "" : value;
@@ -301,8 +301,8 @@ export function ConfiguratorWizard() {
             {helper}
           </div>
           <label className={styles.uploadBox}>
-            <span>Dateien auswaehlen</span>
-            <small>Mehrere Dateien moeglich, bis 10 MB pro Datei.</small>
+            <span>Dateien auswählen</span>
+            <small>Mehrere Dateien möglich, bis 10 MB pro Datei.</small>
             <input
               className="sr-only"
               type="file"
@@ -364,12 +364,12 @@ export function ConfiguratorWizard() {
           <p className={styles.kicker}>Vielen Dank</p>
           <h1>Ihre Anfrage ist bei uns eingelangt.</h1>
           <p className={styles.successLead}>
-            Wir sehen uns Ihre Angaben nun an und melden uns mit dem passenden naechsten Schritt bei Ihnen.
+            Wir sehen uns Ihre Angaben nun an und melden uns mit dem passenden nächsten Schritt bei Ihnen.
           </p>
           <div className={styles.successGrid}>
             <div>
-              <span>Naechster Schritt</span>
-              <strong>persoenliche Rueckmeldung durch unser Team</strong>
+              <span>Nächster Schritt</span>
+              <strong>persönliche Rückmeldung durch unser Team</strong>
             </div>
             <div>
               <span>Projektpfad</span>
@@ -410,17 +410,17 @@ export function ConfiguratorWizard() {
         <div className={styles.heroCopy}>
           <h1>Ihr Projekt, Ihr Pfad.</h1>
           <p>
-            Waehlen Sie Ihr Anliegen — danach sehen Sie nur noch die Fragen, die fuer Ihr Vorhaben wirklich relevant
+            Wählen Sie Ihr Anliegen — danach sehen Sie nur noch die Fragen, die für Ihr Vorhaben wirklich relevant
             sind.
           </p>
         </div>
         <div className={styles.heroFacts}>
           <div>
-            <span>Gefuehrt</span>
+            <span>Geführt</span>
             <strong>jede Auswahl oeffnet nur den passenden Unterpfad</strong>
           </div>
           <div>
-            <span>Verstaendlich</span>
+            <span>Verständlich</span>
             <strong>Hilfen dort, wo technische Begriffe auftauchen</strong>
           </div>
           <div>
@@ -475,7 +475,7 @@ export function ConfiguratorWizard() {
                 onClick={goToPreviousStep}
                 disabled={currentStepIndex === 0 || submitState.status === "submitting"}
               >
-                Zurueck
+                Zurück
               </button>
 
               {currentStepIndex === activeSteps.length - 1 ? (
@@ -485,7 +485,7 @@ export function ConfiguratorWizard() {
                   onClick={submitLead}
                   disabled={submitState.status === "submitting"}
                 >
-                  {submitState.status === "submitting" ? "Anfrage wird gespeichert..." : "Anfrage uebergeben"}
+                  {submitState.status === "submitting" ? "Anfrage wird gespeichert..." : "Anfrage übergeben"}
                 </button>
               ) : (
                 <button type="button" className={styles.primaryButton} onClick={goToNextStep}>
@@ -494,23 +494,22 @@ export function ConfiguratorWizard() {
               )}
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className={styles.trustSection}>
-        <div className={styles.trustCard}>
-          <h3>Gut zu wissen</h3>
-          <p>
-            Sie muessen nicht jede technische Frage perfekt beantworten. Wenn etwas unklar ist, helfen wir Ihnen im
-            Ablauf weiter oder klaeren offene Punkte spaeter gemeinsam.
-          </p>
-        </div>
-        <div className={styles.trustCard}>
-          <h3>Warum wir manche Angaben fragen</h3>
-          <p>
-            Mit wenigen gezielten Informationen koennen wir Ihren Projektpfad besser einschaetzen und uns passend statt
-            allgemein bei Ihnen melden.
-          </p>
+          <div className={styles.trustSection}>
+            <div className={styles.trustCard}>
+              <h3>Gut zu wissen</h3>
+              <p>
+                Sie müssen nicht jede technische Frage perfekt beantworten. Wenn etwas unklar ist, helfen wir Ihnen im
+                Ablauf weiter oder klären offene Punkte später gemeinsam.
+              </p>
+            </div>
+            <div className={styles.trustCard}>
+              <h3>Warum wir manche Angaben fragen</h3>
+              <p>
+                Mit wenigen gezielten Informationen können wir Ihren Projektpfad besser einschätzen und uns passend statt
+                allgemein bei Ihnen melden.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </main>

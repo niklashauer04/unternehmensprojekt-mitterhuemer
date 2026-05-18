@@ -117,10 +117,9 @@
   display: block;
   margin-bottom: 8px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-family: var(--font-plex-mono), monospace;
 }
 
 .heroFacts strong,
@@ -447,7 +446,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 18px;
 }
 
 .trustCard h3 {
