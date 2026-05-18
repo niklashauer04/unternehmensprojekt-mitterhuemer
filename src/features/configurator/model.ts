@@ -325,6 +325,7 @@ export const STEP_CONFIG: StepConfig[] = [
     stage: "detail",
     fieldIds: [
       "heatingCurrentSystem",
+      "isMitterhuemer",
       "heatingBackupSource",
       "heatingSecondSystem",
       "heatingBrand",
@@ -340,6 +341,7 @@ export const STEP_CONFIG: StepConfig[] = [
       "heatingOperatingHours",
       "heatingDistrictHeat",
       "heatingCompetition",
+      "oilTankDisposal",
       "heatingBudgetSegment",
     ],
   },
@@ -537,7 +539,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "Diese Angaben reichen für den Einstieg.",
     nextStepHint: "Danach geht es zu Speicher und Verbrauchern.",
     stage: "core",
-    fieldIds: ["pvGoal", "pvAnnualConsumption", "pvRoofForm", "pvRoofOrientation", "pvRoofArea", "pvShading", "pvCableRoute", "pvMainMeterPhoto"],
+    fieldIds: ["pvGoal", "pvAnnualConsumption", "pvRoofForm", "pvRoofOrientation", "pvRoofArea", "pvShading", "pvInverterLocation", "pvDcCableLength", "pvAcCableLength", "pvCableRoute", "pvMainMeterPhoto"],
   },
   {
     id: "pv-new-options",
@@ -549,7 +551,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "Das beeinflusst die spätere Lösung.",
     nextStepHint: "Danach geht es weiter.",
     stage: "detail",
-    fieldIds: ["pvStorage", "pvWallbox", "pvLargeConsumers", "pvPlannedPurchases", "pvMeterSituation"],
+    fieldIds: ["pvStorage", "pvBackupRequired", "pvWallbox", "pvLargeConsumers", "pvPlannedPurchases", "pvMeterSituation"],
   },
   {
     id: "pv-extension-existing",
@@ -573,7 +575,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "So sehen wir, wie konkret die Erweiterung ist.",
     nextStepHint: "Danach geht es weiter.",
     stage: "detail",
-    fieldIds: ["pvGoal", "pvRoofArea", "pvStorage", "pvWallbox", "pvLargeConsumers", "pvPlannedPurchases", "pvMeterSituation"],
+    fieldIds: ["pvGoal", "pvRoofArea", "pvStorage", "pvBackupRequired", "pvWallbox", "pvLargeConsumers", "pvPlannedPurchases", "pvMeterSituation"],
   },
   {
     id: "ziele",
@@ -585,7 +587,7 @@ export const STEP_CONFIG: StepConfig[] = [
     whyItMatters: "So können wir die Rückmeldung besser einordnen.",
     nextStepHint: "Danach fehlen nur noch Kontakt und Timing.",
     stage: "core",
-    fieldIds: ["projectGoals"],
+    fieldIds: ["projectGoals", "manufacturerPreference"],
   },
   {
     id: "uebergabe",
@@ -778,16 +780,18 @@ export const FIELD_CONFIG: FieldConfig[] = [
   defineField({
     id: "heatingWarmWater",
     stepId: "heating-system-profile",
-    label: "Soll Warmwasser mitlaufen?",
+    label: "Warmwasserversorgung — wie soll das laufen?",
     kind: "choice-single",
     priority: "required",
     purpose: "Warmwasser ist wichtig für die passende Auslegung der Lösung.",
     outputKey: "heating.warmWater",
     required: true,
     options: [
-      { label: "ja", value: "ja" },
-      { label: "nein", value: "nein" },
-      { label: "weiß ich nicht", value: "unbekannt" },
+      { label: "Über Pufferspeicher (Wärmepumpe heizt Puffer auf)", value: "ja", hint: "Üblich bei Wärmepumpen" },
+      { label: "Über Stromboiler / Elektroboiler", value: "stromboiler" },
+      { label: "Über eigene Brauchwasser-Wärmepumpe", value: "brauchwasser-wp" },
+      { label: "Nein / kein eigener Bedarf", value: "nein" },
+      { label: "Weiß ich nicht", value: "unbekannt" },
     ],
   }),
   defineField({
@@ -809,6 +813,21 @@ export const FIELD_CONFIG: FieldConfig[] = [
       { label: "Elektro / Direktheizung", value: "elektro" },
       { label: "Noch nichts / Neubau", value: "keines" },
     ],
+  }),
+  defineField({
+    id: "isMitterhuemer",
+    stepId: "heating-existing-system",
+    label: "Wurde die Anlage von Mitterhuemer installiert?",
+    kind: "choice-single",
+    priority: "recommended",
+    purpose: "Falls ja, liegen im Archiv bereits technische Unterlagen vor — das beschleunigt die Beratung.",
+    outputKey: "heating.isMitterhuemer",
+    options: [
+      { label: "Ja", value: "ja" },
+      { label: "Nein", value: "nein" },
+      { label: "Weiß ich nicht", value: "unbekannt" },
+    ],
+    visibleWhen: (values) => hasExistingHeatingSystem(values),
   }),
   defineField({
     id: "heatingBrand",
@@ -885,6 +904,25 @@ export const FIELD_CONFIG: FieldConfig[] = [
       ["waermepumpen-austausch", "direktverdampfer-austausch", "umruestung-heizung"].includes(
         values.projectStandbein as string,
       ),
+  }),
+  defineField({
+    id: "oilTankDisposal",
+    stepId: "heating-existing-system",
+    label: "Soll der Öltank entsorgt werden?",
+    kind: "choice-single",
+    priority: "recommended",
+    purpose: "Die Tankentsorgung ist kostenrelevant und muss frühzeitig koordiniert werden.",
+    outputKey: "heating.oilTankDisposal",
+    helperCtaLabel: "Was kostet das?",
+    helperText: "Entsorgung und Befüllung mit Sand kostet je nach Tankgröße ca. 500–2.000 €. Wir können das auf Wunsch koordinieren.",
+    options: [
+      { label: "Ja, Öltank soll entfernt werden", value: "ja" },
+      { label: "Nein, Öltank bleibt", value: "nein" },
+      { label: "Noch nicht entschieden", value: "unklar" },
+    ],
+    visibleWhen: (values) =>
+      (values.projectStandbein === "waermepumpen-austausch" || values.projectStandbein === "umruestung-heizung") &&
+      values.heatingCurrentSystem === "oel",
   }),
   defineField({
     id: "heatingBudgetSegment",
@@ -1791,6 +1829,57 @@ export const FIELD_CONFIG: FieldConfig[] = [
     ],
   }),
   defineField({
+    id: "pvInverterLocation",
+    stepId: "pv-new-base",
+    label: "Wo soll der Wechselrichter montiert werden?",
+    kind: "choice-single",
+    priority: "required",
+    purpose: "Der Standort des Wechselrichters bestimmt die Kabelwege und den Installationsaufwand.",
+    outputKey: "pv.inverterLocation",
+    required: true,
+    helperCtaLabel: "Was ist der beste Ort?",
+    helperText: "Optimal ist ein Technikraum oder Keller in der Nähe des Hauptverteilers. So bleiben die AC-Kabelwege kurz.",
+    options: [
+      { label: "Garage", value: "garage" },
+      { label: "Keller", value: "keller" },
+      { label: "Technikraum / Heizungsraum", value: "technikraum" },
+      { label: "Anderer Ort", value: "sonstiges" },
+      { label: "Noch nicht festgelegt", value: "unklar" },
+    ],
+    visibleWhen: (values) =>
+      values.projectStandbein === "pv-neuanlage" || values.projectStandbein === "pv-erweiterung",
+  }),
+  defineField({
+    id: "pvDcCableLength",
+    stepId: "pv-new-base",
+    label: "Geschätzte Länge: Dach → Wechselrichter (DC-Kabel)",
+    kind: "number",
+    priority: "recommended",
+    purpose: "Die DC-Kabellänge beeinflusst den Installationsaufwand direkt.",
+    outputKey: "pv.dcCableLength",
+    unit: "m",
+    min: 1,
+    max: 200,
+    customerHint: "Grobe Schätzung reicht — in Metern.",
+    visibleWhen: (values) =>
+      values.projectStandbein === "pv-neuanlage" || values.projectStandbein === "pv-erweiterung",
+  }),
+  defineField({
+    id: "pvAcCableLength",
+    stepId: "pv-new-base",
+    label: "Geschätzte Länge: Wechselrichter → Zähler (AC-Kabel)",
+    kind: "number",
+    priority: "recommended",
+    purpose: "Die AC-Kabellänge ist entscheidend für die Elektroinstallation.",
+    outputKey: "pv.acCableLength",
+    unit: "m",
+    min: 1,
+    max: 100,
+    customerHint: "Grobe Schätzung reicht — in Metern.",
+    visibleWhen: (values) =>
+      values.projectStandbein === "pv-neuanlage" || values.projectStandbein === "pv-erweiterung",
+  }),
+  defineField({
     id: "pvCableRoute",
     stepId: "pv-new-base",
     label: "Wie wird die Kabelverbindung vom Dach zum Verteiler verlaufen?",
@@ -1857,6 +1946,25 @@ export const FIELD_CONFIG: FieldConfig[] = [
     ],
   }),
   defineField({
+    id: "pvBackupRequired",
+    stepId: "pv-new-options",
+    label: "Soll die Anlage Notstrom liefern?",
+    kind: "choice-single",
+    priority: "recommended",
+    purpose: "Notstromfähigkeit beeinflusst die Auswahl des Wechselrichters und die Speichergröße deutlich.",
+    outputKey: "pv.backupRequired",
+    helperCtaLabel: "Was bedeutet Notstrom?",
+    helperText: "Mit Notstrom bleibt das Haus auch bei Netzausfall versorgt — bei dreiphasigem Notstrom laufen auch Wärmepumpe und Herd weiter. Das setzt einen entsprechend großen Speicher voraus.",
+    options: [
+      { label: "Ja, voller dreiphasiger Notstrom", value: "ja", hint: "Wärmepumpe, Herd und mehr laufen weiter" },
+      { label: "Nur Grundversorgung (USV-Betrieb)", value: "usv", hint: "Licht und kleinere Geräte — ohne Unterbrechung" },
+      { label: "Nein", value: "nein" },
+      { label: "Noch nicht entschieden", value: "unklar" },
+    ],
+    visibleWhen: (values) =>
+      values.projectStandbein === "pv-neuanlage" || values.projectStandbein === "pv-erweiterung",
+  }),
+  defineField({
     id: "pvWallbox",
     stepId: "pv-new-options",
     label: "Ist E-Auto oder Wallbox ein Thema?",
@@ -1864,9 +1972,10 @@ export const FIELD_CONFIG: FieldConfig[] = [
     purpose: "E-Auto und Wallbox können die Planung der Anlage deutlich beeinflussen.",
     outputKey: "pv.wallboxPlan",
     options: [
-      { label: "Ja", value: "ja" },
-      { label: "Nein", value: "nein" },
+      { label: "Ja, klassische AC-Wallbox", value: "ac-wallbox", hint: "Standard — lädt über Wechselstrom" },
+      { label: "Ja, DC-DC-Ladestation (direkte PV-Nutzung)", value: "dc-dc-wallbox", hint: "Lädt effizienter direkt aus der PV — z. B. mit SIG Energy" },
       { label: "Später vielleicht", value: "spaeter" },
+      { label: "Nein", value: "nein" },
     ],
   }),
   defineField({
@@ -1970,6 +2079,25 @@ export const FIELD_CONFIG: FieldConfig[] = [
       { label: "Zukunftssicher", value: "zukunftssicherheit" },
       { label: "Förderung nutzen", value: "foerderungen" },
     ],
+  }),
+  defineField({
+    id: "manufacturerPreference",
+    stepId: "ziele",
+    label: "Hast du eine Hersteller-Präferenz?",
+    kind: "choice-single",
+    priority: "recommended",
+    purpose: "Kein Muss — hilft uns, das Angebot passend auszurichten.",
+    outputKey: "project.manufacturerPreference",
+    options: [
+      { label: "Österreichischer Hersteller (Ochsner, Ovum, Heliotherm, …)", value: "oesterreichisch" },
+      { label: "Bekannte internationale Marke (Buderus, Viessmann, …)", value: "international" },
+      { label: "Bestes Preis-Leistungs-Verhältnis", value: "preis-leistung" },
+      { label: "Kein Unterschied für mich", value: "egal" },
+    ],
+    visibleWhen: (values) =>
+      ["waermepumpen-austausch", "direktverdampfer-austausch", "umruestung-heizung"].includes(
+        values.projectStandbein as string,
+      ),
   }),
   defineField({
     id: "fullName",
