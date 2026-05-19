@@ -1,12 +1,19 @@
 import type { FormValues } from "./model";
 
+export type PriceLineItem = {
+  label: string;
+  amount: number; // positiv = Kosten, negativ = Abzug/Förderung
+  hint?: string;
+  isSubsidy?: boolean;
+};
+
 export type PriceResult = {
+  lineItems: PriceLineItem[];
   brutto: number;
   foerderung: number;
   netto: number;
-  range: { min: number; max: number };
+  range?: { min: number; max: number }; // nur bei Heizung (Range-basiert)
   label: string;
-  foerderungHint?: string;
 };
 
 // Heizung-Preisranges nach Systemtyp
@@ -30,6 +37,7 @@ export function calculateHeatingPrice(values: FormValues): PriceResult | null {
 
   const min = Math.round((rangeEntry.min * conversionFactor) / 500) * 500;
   const max = Math.round((rangeEntry.max * conversionFactor) / 500) * 500;
+  const avg = Math.round((min + max) / 2);
 
   const isEligibleForSubsidy =
     isConversion &&
@@ -38,17 +46,41 @@ export function calculateHeatingPrice(values: FormValues): PriceResult | null {
 
   const foerderung = isEligibleForSubsidy ? 7500 : 0;
 
+  const lineItems: PriceLineItem[] = [];
+
+  if (isConversion) {
+    const baseMin = rangeEntry.min;
+    const baseMax = rangeEntry.max;
+    const baseAvg = Math.round((baseMin + baseMax) / 2);
+    lineItems.push({
+      label: "Umrüstungsaufschlag",
+      amount: avg - baseAvg,
+      hint: "+15 % auf Basispreis",
+    });
+  }
+
+  if (foerderung > 0) {
+    lineItems.push({
+      label: "Österreich. Sanierungsförderung",
+      amount: -foerderung,
+      hint: "bei Öl/Gas-Austausch",
+      isSubsidy: true,
+    });
+  } else if (values.heatingDistrictHeat === "ja") {
+    lineItems.push({
+      label: "Hinweis: Fernwärme verfügbar",
+      amount: 0,
+      hint: "Förderung entfällt",
+    });
+  }
+
   return {
-    brutto: Math.round((min + max) / 2),
+    lineItems,
+    brutto: avg,
     foerderung,
-    netto: Math.round((min + max) / 2) - foerderung,
+    netto: avg - foerderung,
     range: { min, max },
     label: rangeEntry.label,
-    foerderungHint: isEligibleForSubsidy
-      ? "Österreichische Sanierungsförderung: bis zu 7.500 €"
-      : values.heatingDistrictHeat === "ja"
-      ? "Hinweis: Bei verfügbarem Fernwärmenetz keine Sanierungsförderung"
-      : undefined,
   };
 }
 
@@ -56,16 +88,22 @@ function roundToHalf(n: number): number {
   return Math.round(n * 2) / 2;
 }
 
-// Dachtyp → durchschnittliche Montagekosten pro Modul
 function getMountingCostPerModule(roofForm: string): number {
   switch (roofForm) {
     case "flachdach": return 93;
     case "pultdach": return 68;
-    default: return 53; // Satteldach / Standard
+    default: return 53;
   }
 }
 
-// Arbeitskosten pro Modul (SIG Energy Installateur-Sätze)
+function getMountingLabel(roofForm: string): string {
+  switch (roofForm) {
+    case "flachdach": return "Montage (Flachdach)";
+    case "pultdach": return "Montage (Pultdach)";
+    default: return "Montage (Satteldach)";
+  }
+}
+
 function getLaborCostPerModule(moduleCount: number): number {
   if (moduleCount <= 10) return 159;
   if (moduleCount <= 30) return 130;
@@ -87,29 +125,84 @@ export function calculatePvPrice(values: FormValues): PriceResult | null {
   const moduleCost = moduleCount * 80;
   const mountingCost = moduleCount * mountingPerModule;
   const laborCost = moduleCount * laborPerModule;
-  const inverterCost = 2034; // SIG Energy 10kW Basis
+  const inverterCost = 2034;
   const liftingCost = 330;
-  const fixedCost = 300; // Meldung + Doku + Förderantrag
+  const fixedCost = 300;
 
+  const storageSize = Math.round(annualConsumption / 365);
   const storagePlan = values.pvStorage as string;
-  const storageSize = annualConsumption / 365;
-  const storageCost = storagePlan === "ja" ? Math.round(storageSize) * 330 : 0;
+  const storageCost = storagePlan === "ja" ? storageSize * 330 : 0;
 
-  const subtotal = moduleCost + mountingCost + laborCost + inverterCost + liftingCost + fixedCost + storageCost;
+  // Installationskosten aus Kabelfelder
+  const dcLength = Number(values.pvDcCableLength) || 0;
+  const acLength = Number(values.pvAcCableLength) || 0;
+  const dcCableCost = Math.round(dcLength * 4);
+  const acCableCost = Math.round(acLength * 5);
+
+  // Notstrom-Aufschlag
+  const backup = values.pvBackupRequired as string;
+  const backupCost = backup === "ja" ? 1200 : backup === "usv" ? 500 : 0;
+  const backupLabel =
+    backup === "ja" ? "Hybrid-Wechselrichter (Notstrom)" : "Notstrom-Modul (USV)";
+
+  const subtotal =
+    moduleCost + mountingCost + laborCost + inverterCost +
+    liftingCost + fixedCost + storageCost + dcCableCost + acCableCost + backupCost;
   const brutto = Math.round(subtotal / 100) * 100;
 
   // Österreichische Förderung
-  const foerderungPv = kwp <= 10 ? kwp * 150 : kwp <= 20 ? kwp * 140 : kwp * 130;
-  const foerderungSpeicher = storagePlan === "ja" ? Math.round(storageSize) * 150 : 0;
+  const foerderungPvPerKwp = kwp <= 10 ? 150 : kwp <= 20 ? 140 : 130;
+  const foerderungPv = kwp * foerderungPvPerKwp;
+  const foerderungSpeicher = storagePlan === "ja" ? storageSize * 150 : 0;
   const foerderung = Math.round(foerderungPv + foerderungSpeicher);
 
+  const lineItems: PriceLineItem[] = [
+    { label: `Solarmodule (${moduleCount} × 80 €)`, amount: moduleCost },
+    { label: getMountingLabel(roofForm), amount: mountingCost },
+    { label: "Elektroinstallation", amount: laborCost },
+    { label: "Wechselrichter", amount: inverterCost, hint: "SIG Energy 10 kW" },
+    { label: "Hebebühne", amount: liftingCost },
+    { label: "Meldung & Dokumentation", amount: fixedCost },
+  ];
+
+  if (storageCost > 0) {
+    lineItems.push({ label: `Speicher (${storageSize} kWh/Tag)`, amount: storageCost });
+  }
+
+  if (dcCableCost > 0) {
+    lineItems.push({ label: `DC-Kabel (${dcLength} m)`, amount: dcCableCost, hint: "Modul → Wechselrichter" });
+  }
+
+  if (acCableCost > 0) {
+    lineItems.push({ label: `AC-Kabel (${acLength} m)`, amount: acCableCost, hint: "Wechselrichter → Zähler" });
+  }
+
+  if (backupCost > 0) {
+    lineItems.push({ label: backupLabel, amount: backupCost });
+  }
+
+  lineItems.push({
+    label: `Förderung PV (Kat. ${kwp <= 10 ? "A" : "B"})`,
+    amount: -Math.round(foerderungPv),
+    hint: `${foerderungPvPerKwp} €/kWp`,
+    isSubsidy: true,
+  });
+
+  if (foerderungSpeicher > 0) {
+    lineItems.push({
+      label: "Speicherförderung",
+      amount: -Math.round(foerderungSpeicher),
+      hint: "150 €/kWh/Tag",
+      isSubsidy: true,
+    });
+  }
+
   return {
+    lineItems,
     brutto,
     foerderung,
     netto: brutto - foerderung,
-    range: { min: Math.round(brutto * 0.85 / 100) * 100, max: Math.round(brutto * 1.15 / 100) * 100 },
     label: `ca. ${roundToHalf(kwp)} kWp Anlage`,
-    foerderungHint: `Förderung Kategorie ${kwp <= 10 ? "A" : "B"}: ${Math.round(foerderungPv).toLocaleString("de-AT")} €${storagePlan === "ja" ? ` + Speicher ${Math.round(foerderungSpeicher).toLocaleString("de-AT")} €` : ""}`,
   };
 }
 
@@ -117,7 +210,11 @@ export function calculatePrice(values: FormValues): PriceResult | null {
   const standbein = values.projectStandbein as string;
   if (!standbein) return null;
   if (standbein.startsWith("pv")) return calculatePvPrice(values);
-  if (standbein === "waermepumpen-austausch" || standbein === "direktverdampfer-austausch" || standbein === "umruestung-heizung") {
+  if (
+    standbein === "waermepumpen-austausch" ||
+    standbein === "direktverdampfer-austausch" ||
+    standbein === "umruestung-heizung"
+  ) {
     return calculateHeatingPrice(values);
   }
   return null;

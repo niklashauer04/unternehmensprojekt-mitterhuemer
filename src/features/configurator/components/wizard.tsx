@@ -17,6 +17,7 @@ import {
   getStandbeinConfig,
   getVisibleOptions,
   getVisibleFieldsForStep,
+  getVisibleFields,
   sanitizeValues,
   type StandbeinId,
   type FieldConfig,
@@ -391,8 +392,13 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
     setSubmitState({ status: "submitting" });
 
     try {
+      const visibleFieldIds = new Set(getVisibleFields(values).map((f) => f.id));
+      const visibleValues = Object.fromEntries(
+        Object.entries(values).filter(([key]) => visibleFieldIds.has(key)),
+      );
+
       const formData = new FormData();
-      formData.append("payload", JSON.stringify({ values }));
+      formData.append("payload", JSON.stringify({ values: visibleValues }));
 
       for (const file of files) {
         formData.append("files", file);

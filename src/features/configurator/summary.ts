@@ -275,6 +275,8 @@ export function buildSubmissionRecord(values: FormValues, attachments: string[])
     heatingDistrictHeat: String(values.heatingDistrictHeat ?? ""),
     heatingCompetition: String(values.heatingCompetition ?? ""),
     pvGoal: String(values.pvGoal ?? ""),
+    isMitterhuemer: String(values.isMitterhuemer ?? ""),
+    oilTankDisposal: String(values.oilTankDisposal ?? ""),
   });
   const contactExpectation = getContactExpectation(String(values.contactRequest ?? ""), String(values.timeline ?? ""));
   const keySignals = assessment.reasons.slice(0, 4);
@@ -348,14 +350,15 @@ export function createSummaryMarkdown(record: SubmissionRecord, values?: FormVal
 
   const priceSection = priceResult
     ? `\n## Kostenindikation\n${[
-        `**Kostenrahmen:** ca. ${priceResult.range.min.toLocaleString("de-AT")} – ${priceResult.range.max.toLocaleString("de-AT")} €`,
+        priceResult.range
+          ? `**Kostenrahmen:** ca. ${priceResult.range.min.toLocaleString("de-AT")} – ${priceResult.range.max.toLocaleString("de-AT")} €`
+          : `**Bruttokosten:** ca. ${priceResult.brutto.toLocaleString("de-AT")} €`,
         priceResult.foerderung > 0
           ? `**Förderung:** ca. – ${priceResult.foerderung.toLocaleString("de-AT")} €`
           : null,
         priceResult.foerderung > 0
           ? `**Netto ca.:** ${priceResult.netto.toLocaleString("de-AT")} €`
           : null,
-        priceResult.foerderungHint ? `_${priceResult.foerderungHint}_` : null,
         `_* Orientierungswert — kein verbindliches Angebot_`,
       ]
         .filter(Boolean)

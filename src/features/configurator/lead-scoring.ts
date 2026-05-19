@@ -46,6 +46,8 @@ export type ScoringInput = {
   heatingDistrictHeat?: string;
   heatingCompetition?: string;
   pvGoal?: string;
+  isMitterhuemer?: string;
+  oilTankDisposal?: string;
 };
 
 function clampScore(value: number) {
@@ -101,6 +103,18 @@ function getReadinessDimension(input: ScoringInput, reasons: string[]) {
     score += 5;
   } else {
     score += 2;
+  }
+
+  // Bestandskunde: Archiv vorhanden → Angebot schneller möglich
+  if (input.isMitterhuemer === "ja") {
+    score += 2;
+    reasons.push("Bestandskunde — technische Unterlagen liegen im Archiv vor.");
+  }
+
+  // Öltank-Entscheidung getroffen → Umsetzungsbereitschaft signalisiert
+  if (input.oilTankDisposal === "ja") {
+    score += 1;
+    reasons.push("Öltank-Entsorgung bereits geplant — Umsetzungsbereitschaft signalisiert.");
   }
 
   // Wettbewerbssituation

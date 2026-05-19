@@ -29,33 +29,35 @@
   font-weight: 500;
 }
 
+/* ── Heizung: Range ─────────────────────────────── */
+
 .body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.priceRange,
-.priceExact {
+.rangeBlock {
   display: flex;
   align-items: baseline;
   gap: 5px;
 }
 
-.rangeLabel {
+.rangePrefix {
   font-size: 13px;
   color: #888;
 }
 
-.rangeValues,
-.exactValue {
-  font-size: 20px;
+.rangeValues {
+  font-size: 18px;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1.2;
 }
 
-.foerderung {
+/* ── PV: Brutto / Netto Blöcke ──────────────────── */
+
+.bruttoBlock {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -63,21 +65,24 @@
   border-top: 1px solid #d4f0dc;
 }
 
-.foerderungLabel {
+.bruttoLabel {
   font-size: 13px;
   color: #555;
+  font-weight: 500;
 }
 
-.foerderungValue {
-  font-size: 14px;
+.bruttoValue {
+  font-size: 15px;
   font-weight: 600;
-  color: #13a538;
+  color: #1a1a1a;
 }
 
-.netto {
+.nettoBlock {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-top: 6px;
+  border-top: 1.5px solid #13a538;
 }
 
 .nettoLabel {
@@ -87,19 +92,66 @@
 }
 
 .nettoValue {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #1a1a1a;
 }
 
-.hint {
-  font-size: 12px;
-  color: #13a538;
-  background: #edfaf1;
-  border-radius: 6px;
-  padding: 6px 10px;
-  line-height: 1.4;
+/* ── Einzelpositionen ────────────────────────────── */
+
+.lineItems {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
+
+.lineItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.lineItemSubsidy {
+  color: #13a538;
+}
+
+.lineItemLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.lineItemLabel > span:first-child {
+  font-size: 12px;
+  color: inherit;
+  line-height: 1.3;
+}
+
+.lineItemHint {
+  font-size: 10px;
+  color: #999;
+  line-height: 1.2;
+}
+
+.lineItemSubsidy .lineItemHint {
+  color: #6cc08a;
+}
+
+.lineItemAmount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+.lineItemAmountNeg {
+  color: #13a538;
+}
+
+/* ── Disclaimer ─────────────────────────────────── */
 
 .disclaimer {
   font-size: 11px;
