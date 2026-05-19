@@ -17,3 +17,6 @@
 
 **Entwicklung**
 * [[Konfigurator-erweitern]]
+
+**Forschung**
+* [[Transkript-Erkenntnisse]]

@@ -18,6 +18,7 @@ Der Konfigurator ist ein geführter Anfrageprozess für Privatkunden (Heizung, P
 | [[Submission-und-Storage]] | API-Route, SubmissionRecord, Datei-Ablage |
 | [[CRM-Uebergabe]] | salesHandoff-Objekt, Odoo-Mapping |
 | [[Konfigurator-erweitern]] | Feld / Step / Standbein hinzufügen |
+| [[Transkript-Erkenntnisse]] | Key Findings aus den Verkaufsgesprächen — Heizung + PV |
 
 ---
 
