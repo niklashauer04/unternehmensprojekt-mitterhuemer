@@ -1,11 +1,12 @@
 .page {
+  --page-width: min(1200px, calc(100vw - 32px));
   width: min(1200px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 24px 0 64px;
 }
 
 .wizardFrame {
-  overflow: hidden;
+  overflow: visible;
   border-radius: 32px;
   border: 1px solid rgba(26, 27, 27, 0.08);
   background: var(--surface);
@@ -14,6 +15,7 @@
 
 .frameBody {
   padding: 18px;
+  overflow: visible;
 }
 
 .stepHeader,
@@ -804,15 +806,28 @@
 
 .priceLayout {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 24px;
   align-items: start;
   width: 100%;
 }
 
+.priceLayoutSingle {
+  width: 100%;
+}
+
 .priceSidebar {
-  position: sticky;
-  top: 24px;
+  align-self: start;
+  min-width: 0;
+}
+
+.priceSidebarInner {
+  position: fixed;
+  top: 96px;
+  right: max(16px, calc((100vw - var(--page-width)) / 2 + 18px));
+  width: 280px;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
 }
 
 @media (max-width: 900px) {
@@ -821,7 +836,13 @@
   }
 
   .priceSidebar {
-    position: static;
     order: 2;
+  }
+
+  .priceSidebarInner {
+    position: static;
+    width: auto;
+    max-height: none;
+    overflow: visible;
   }
 }

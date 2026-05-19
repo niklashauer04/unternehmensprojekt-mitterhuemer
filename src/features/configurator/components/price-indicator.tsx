@@ -6,13 +6,14 @@ import type { FormValues } from "../model";
 
 type Props = {
   values: FormValues;
+  className?: string;
 };
 
 function formatEur(n: number): string {
   return n.toLocaleString("de-AT") + " €";
 }
 
-export function PriceIndicator({ values }: Props) {
+export function PriceIndicator({ values, className }: Props) {
   const result = calculatePrice(values);
 
   if (!result) return null;
@@ -21,7 +22,7 @@ export function PriceIndicator({ values }: Props) {
   const hasFoerderung = result.foerderung > 0;
 
   return (
-    <aside className={styles.indicator}>
+    <aside className={[styles.indicator, className].filter(Boolean).join(" ")}>
       <div className={styles.header}>
         <span className={styles.label}>Kostenrahmen</span>
         {result.label && <span className={styles.sublabel}>{result.label}</span>}
