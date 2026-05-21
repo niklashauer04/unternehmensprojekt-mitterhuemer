@@ -26,6 +26,7 @@ import {
 } from "../model";
 import { buildReviewSections } from "../summary";
 import { validateAll, validateField, validateStep } from "../validation";
+import { HeatingComparison } from "./heating-comparison";
 import { PriceIndicator } from "./price-indicator";
 import type { SubmissionResult } from "../storage";
 
@@ -206,6 +207,18 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   const isProjectSelectionStep = currentStep?.id === "einstieg";
   const isReviewStep = currentStep?.id === "pruefung";
   const hasProjectUrlState = Boolean(currentProjectStandbein);
+  const showHeatingComparison =
+    currentStep?.id === "heating-system-profile" &&
+    (values.projectStandbein === "umruestung-heizung" ||
+      values.projectStandbein === "waermepumpen-austausch");
+  const heatingProfilePrimaryField =
+    showHeatingComparison && currentStep?.id === "heating-system-profile"
+      ? currentFields.find((field) => field.id === "desiredHeatingSystem") ?? null
+      : null;
+  const heatingProfileSecondaryFields =
+    showHeatingComparison && currentStep?.id === "heating-system-profile"
+      ? currentFields.filter((field) => field.id !== "desiredHeatingSystem")
+      : [];
 
   useEffect(() => {
     if (!currentProjectStandbein) {
@@ -958,7 +971,24 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
                         )}
                       </>
                     ) : (
-                      <div className={styles.fieldStack}>{currentFields.map((field) => renderField(field))}</div>
+                      <>
+                        {showHeatingComparison && heatingProfilePrimaryField ? (
+                          <>
+                            <div className={styles.fieldStack}>{renderField(heatingProfilePrimaryField)}</div>
+                            <HeatingComparison
+                              key={values.projectStandbein as StandbeinId}
+                              standbein={values.projectStandbein as StandbeinId}
+                            />
+                            {heatingProfileSecondaryFields.length > 0 ? (
+                              <div className={styles.fieldStack}>
+                                {heatingProfileSecondaryFields.map((field) => renderField(field))}
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          <div className={styles.fieldStack}>{currentFields.map((field) => renderField(field))}</div>
+                        )}
+                      </>
                     )}
                     {currentFields.length === 0 ? (
                       <p className={styles.emptyState}>

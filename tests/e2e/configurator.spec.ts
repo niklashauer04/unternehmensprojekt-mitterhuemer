@@ -799,6 +799,59 @@ test.describe("Mitterhuemer Konfigurator E2E", () => {
     await expectCurrentStep(page, "ziele");
   });
 
+  test("zeigt die Vergleichsansicht nur in Heizungs-Pfaden", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "175",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-system-profile");
+    await expect(page.getByTestId("heating-comparison")).toBeVisible();
+
+    await page.goto("/?projekt=pv-neuanlage");
+    await expectCurrentStep(page, "objekt");
+    await expect(page.getByTestId("heating-comparison")).toHaveCount(0);
+  });
+
+  test("lässt zwei Heizsysteme im Vergleich auswählen und aktualisiert die Tabelle", async ({ page }) => {
+    await page.goto("/?projekt=umruestung-heizung");
+    await expectCurrentStep(page, "objekt");
+
+    await fillVisibleStepFields(page, {
+      buildingType: "einfamilienhaus",
+      renovationState: "teilweise-saniert",
+      heatedArea: "175",
+      ownershipStatus: "eigentuemer",
+    });
+    await page.getByTestId("wizard-button-next").click();
+
+    await expectCurrentStep(page, "heating-system-profile");
+    await page.getByTestId("heating-comparison-toggle").click();
+
+    await expect(page.getByTestId("heating-comparison-table")).toBeVisible();
+    await expect(page.getByTestId("heating-comparison-heading-left")).toContainText("Luftwärmepumpe");
+    await expect(page.getByTestId("heating-comparison-heading-right")).toContainText("Erdwärme");
+    await expect(page.getByTestId("heating-comparison-value-left-investment")).toContainText("23");
+
+    await page.getByTestId("heating-comparison-select-right").selectOption("biomasse");
+    await expect(page.getByTestId("heating-comparison-heading-right")).toContainText("Biomasse");
+    await expect(page.getByTestId("heating-comparison-value-right-investment")).toContainText("23");
+    await expect(page.getByTestId("heating-comparison-value-right-investment")).toContainText("40");
+
+    await page.getByTestId("heating-comparison-select-left").selectOption("biomasse");
+    await expect(page.getByTestId("heating-comparison-heading-left")).toContainText("Biomasse");
+    await expect(page.getByTestId("heating-comparison-heading-right")).toContainText("Luftwärmepumpe");
+
+    await page.getByTestId("heating-comparison-info-button-installationDuration").click();
+    await expect(page.getByTestId("heating-comparison-info-tooltip-installationDuration")).toContainText("Typischer Richtwert");
+  });
+
   test("zeigt konkrete Upload-Hinweise und spinnerfreie Zahlenfelder", async ({ page }) => {
     await page.goto("/?projekt=umruestung-heizung");
     await expectCurrentStep(page, "objekt");

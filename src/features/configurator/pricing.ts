@@ -1,4 +1,4 @@
-import type { FormValues } from "./model";
+import type { FormValues, StandbeinId } from "./model";
 
 export type PriceLineItem = {
   label: string;
@@ -24,6 +24,13 @@ const HEATING_RANGES: Record<string, { min: number; max: number; label: string }
   pellets: { min: 15000, max: 25000, label: "Pelletssystem" },
   biomasse: { min: 20000, max: 35000, label: "Biomassesystem" },
 };
+
+export function getHeatingPriceForSystem(standbein: StandbeinId, system: string): PriceResult | null {
+  return calculateHeatingPrice({
+    projectStandbein: standbein,
+    desiredHeatingSystem: system,
+  });
+}
 
 export function calculateHeatingPrice(values: FormValues): PriceResult | null {
   const system = values.desiredHeatingSystem as string;
