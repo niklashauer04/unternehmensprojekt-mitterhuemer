@@ -810,9 +810,22 @@
   width: 100%;
 }
 
+.priceLayoutSingle {
+  width: 100%;
+}
+
 .priceSidebar {
-  position: sticky;
-  top: 24px;
+  align-self: start;
+  min-width: 0;
+}
+
+.priceSidebarInner {
+  position: fixed;
+  top: 96px;
+  right: max(16px, calc((100vw - var(--page-width)) / 2 + 18px));
+  width: 280px;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
 }
 
 @media (max-width: 900px) {
@@ -821,7 +834,13 @@
   }
 
   .priceSidebar {
-    position: static;
     order: 2;
+  }
+
+  .priceSidebarInner {
+    position: static;
+    width: auto;
+    max-height: none;
+    overflow: visible;
   }
 }

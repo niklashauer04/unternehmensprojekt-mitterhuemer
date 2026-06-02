@@ -24,6 +24,7 @@ import {
   type FormValues,
   type StepId,
 } from "../model";
+import { calculatePrice } from "../pricing";
 import { buildReviewSections } from "../summary";
 import { validateAll, validateField, validateStep } from "../validation";
 import { HeatingComparison } from "./heating-comparison";
@@ -203,6 +204,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
   const deepDiveFields = currentStep ? getFieldsForPriority(currentStep.id, values, "deep-dive") : [];
   const progress = activeSteps.length > 0 ? ((currentStepIndex + 1) / activeSteps.length) * 100 : 0;
   const selectedStandbein = getStandbeinConfig(getSelectedStandbein(values));
+  const hasPriceIndicator = Boolean(calculatePrice(values));
   const reviewSections = buildReviewSections(values);
   const isProjectSelectionStep = currentStep?.id === "einstieg";
   const isReviewStep = currentStep?.id === "pruefung";
@@ -924,7 +926,7 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
         </section>
 
         <div className={styles.frameBody}>
-          <div className={styles.priceLayout}>
+          <div className={hasPriceIndicator ? styles.priceLayout : styles.priceLayoutSingle}>
           <section className={styles.workspace}>
             <div className={styles.stepShell}>
               <div className={styles.stepHeader} data-testid="wizard-progress">
@@ -1040,9 +1042,13 @@ export function ConfiguratorWizard({ initialProjectStandbein = null }: Configura
               </div>
             </div>
           </section>
-          <div className={styles.priceSidebar}>
-            <PriceIndicator values={values} />
-          </div>
+          {hasPriceIndicator ? (
+            <div className={styles.priceSidebar}>
+              <div className={styles.priceSidebarInner}>
+                <PriceIndicator values={values} />
+              </div>
+            </div>
+          ) : null}
           </div>
         </div>
       </section>
